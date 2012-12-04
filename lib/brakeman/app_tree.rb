@@ -2,23 +2,30 @@ module Brakeman
   class AppTree
     VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb].join(",")
 
-    attr_reader :root
-
     def self.from_options(options)
-      root = options[:app_path]
-
       # Convert files into Regexp for matching
       if options[:skip_files]
-        list = "(?:" << options[:skip_files].map { |f| Regexp.escape f }.join("|") << ")$"
-        new(root, Regexp.new(list))
+        skip_files = "(?:" << options[:skip_files].map { |f| Regexp.escape f }.join("|") << ")$"
+        skip_files = Regexp.new(skip_files)
       else
-        new(root)
+        skip_files = nil
+      end
+
+      root = if options[:app_path] =~ /^bertrpc:\/\//
+        require "brakeman/smoke_app_tree"
+        SmokeAppTree.new(options[:app_path], skip_files)
+      else
+        new(File.expand_path(options[:app_path]), skip_files)
       end
     end
 
     def initialize(root, skip_files = nil)
       @root = root
       @skip_files = skip_files
+    end
+
+    def valid?
+      @root && exists?("app")
     end
 
     def expand_path(path)
