@@ -32,13 +32,19 @@ module Brakeman
       raise "TODO path_exists?"
     end
 
-
     def exists?(path)
       file_index[path]
     end
 
+    def template_paths
+      @template_paths ||= VIEW_EXTENSIONS.map do |extension|
+        find_paths("app/views", "*.#{extension}")
+      end.flatten.uniq
+    end
+
     def layout_exists?(name)
-      !glob("app/views/layouts/#{name}.html.{erb,haml}").empty?
+      !glob("app/views/layouts/#{name}.html.erb").empty? ||
+      !glob("app/views/layouts/#{name}.html.haml").empty?
     end
 
   private

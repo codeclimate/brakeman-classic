@@ -1,6 +1,6 @@
 module Brakeman
   class AppTree
-    VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb].join(",")
+    VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb]
 
     def self.from_options(options)
       # Convert files into Regexp for matching
@@ -66,7 +66,7 @@ module Brakeman
     end
 
     def template_paths
-      @template_paths ||= find_paths("app/views", "*.{#{VIEW_EXTENSIONS}}")
+      @template_paths ||= find_paths("app/views", "*.{#{VIEW_EXTENSIONS.join(",")}}")
     end
 
     def layout_exists?(name)
