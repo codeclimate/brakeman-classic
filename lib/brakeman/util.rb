@@ -262,7 +262,7 @@ module Brakeman::Util
     end
 
     if warning.file
-      File.expand_path warning.file, tracker.options[:app_path]
+      warning.file
     else
       case warning.warning_set
       when :controller
