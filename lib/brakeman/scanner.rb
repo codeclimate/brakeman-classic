@@ -232,6 +232,11 @@ class Brakeman::Scanner
   #
   #Adds processed views to tracker.views
   def process_templates
+    if options[:skip_templates]
+      Brakeman.notify '[Skipping]'
+      return
+    end
+
     $stdout.sync = true
 
     count = 0
