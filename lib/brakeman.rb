@@ -39,6 +39,7 @@ module Brakeman
   #  * :run_checks - array of checks to run (run all if not specified)
   #  * :safe_methods - array of methods to consider safe
   #  * :skip_libs - do not process lib/ directory (default: false)
+  #  * :skip_templates - do not process app/views/ directory (default: false)
   #  * :skip_checks - checks not to run (run all if not specified)
   #  * :relative_path - show relative path of each file(default: false)
   #  * :summary_only - only output summary section of report
