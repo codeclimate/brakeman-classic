@@ -1,4 +1,5 @@
 require "brakeman/app_tree"
+require "active_support/core_ext"
 require "grit"
 require "bertrpc"
 require "uri"
