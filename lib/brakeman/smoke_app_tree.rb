@@ -62,7 +62,7 @@ module Brakeman
     end
 
     def file_index
-      @file_index = Hash.new.tap do |index|
+      @file_index ||= Hash.new.tap do |index|
         deep_tree(commit.tree.id).contents.each do |content|
           index[content.name] = content.id
         end
