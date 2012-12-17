@@ -5,7 +5,7 @@ require "uri"
 
 module Brakeman
   class SmokeAppTree < AppTree
-    BRANCH_NAME = "origin/master"
+    DEFAULT_BRANCH_NAME = "origin/master"
 
     def initialize(url, skip_files = nil)
       @uri = URI.parse(url)
@@ -78,14 +78,26 @@ module Brakeman
     end
 
     def ref
-      @ref ||= grit_repo.refs.find { |r| r.name == BRANCH_NAME }
+      @ref ||= grit_repo.refs.find { |r| r.name == branch_name }
     end
 
     def grit_repo
       @grit_repo ||= ::Grit::Repo.allocate.tap do |r|
-        r.path = "#{@uri.path.split("/").last}.git"
+        r.path = "#{repo_id}.git"
         r.git = SmokeClient.new(@uri)
       end
+    end
+
+    def repo_id
+      @repo_id ||= uri_parts[1]
+    end
+
+    def branch_name
+      @branch_name ||= (uri_parts[2..-1].join("/").presence || DEFAULT_BRANCH_NAME)
+    end
+
+    def uri_parts
+      @uri_parts ||= @uri.path.sub(/^\//, "").split("/")
     end
 
     class SmokeClient
@@ -101,7 +113,7 @@ module Brakeman
       end
 
       def repo_id
-        @uri.path.split("/").last
+        @repo_id ||= uri_parts[1]
       end
 
       def mod
@@ -113,7 +125,11 @@ module Brakeman
       end
 
       def module_name
-        @module_name ||= @uri.path.sub(/^\//, "").split("/").first
+        @module_name ||= uri_parts[0]
+      end
+
+      def uri_parts
+        @uri_parts ||= @uri.path.sub(/^\//, "").split("/")
       end
     end
 
