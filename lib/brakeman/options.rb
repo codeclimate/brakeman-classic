@@ -87,7 +87,7 @@ module Brakeman::Options
         opts.on "--url-safe-methods method1,method2,etc", Array, "Do not warn of XSS if the link_to href parameter is wrapped in a safe method" do |methods|
           options[:url_safe_methods] ||= Set.new
           options[:url_safe_methods].merge methods.map {|e| e.to_sym }
-        end        
+        end
 
         opts.on "--skip-files file1,file2,etc", Array, "Skip processing of these files" do |files|
           options[:skip_files] ||= Set.new
@@ -96,6 +96,10 @@ module Brakeman::Options
 
         opts.on "--skip-libs", "Skip processing lib directory" do
           options[:skip_libs] = true
+        end
+
+        opts.on "--skip-templates", "Skip processing views directory" do
+          options[:skip_templates] = true
         end
 
         opts.on "-t", "--test Check1,Check2,etc", Array, "Only run the specified checks" do |checks|
@@ -124,11 +128,11 @@ module Brakeman::Options
         opts.separator "Output options:"
 
         opts.on "-d", "--debug", "Lots of output" do
-          options[:debug] = true 
+          options[:debug] = true
         end
 
-        opts.on "-f", 
-          "--format TYPE", 
+        opts.on "-f",
+          "--format TYPE",
           [:pdf, :text, :html, :csv, :tabs, :json],
           "Specify output formats. Default is text" do |type|
 
@@ -173,9 +177,9 @@ module Brakeman::Options
           options[:relative_paths] = true
         end
 
-        opts.on "-w", 
-          "--confidence-level LEVEL", 
-          ["1", "2", "3"], 
+        opts.on "-w",
+          "--confidence-level LEVEL",
+          ["1", "2", "3"],
           "Set minimal confidence level (1 - 3)" do |level|
 
           options[:min_confidence] =  3 - level.to_i
