@@ -95,7 +95,7 @@ module Brakeman
     def branch_name
       @branch_name ||= begin
         from_uri = uri_parts[2..-1].join("/")
-        from_uri.present? ? from_uri || DEFAULT_BRANCH_NAME
+        from_uri.present? ? from_uri : DEFAULT_BRANCH_NAME
       end
     end
 
