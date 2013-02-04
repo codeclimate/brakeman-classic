@@ -89,7 +89,7 @@ module Brakeman
     end
 
     def commit_sha
-      @commit_sha ||= uri_parts[2..-1]
+      @commit_sha ||= uri_parts[2]
     end
 
     def uri_parts
