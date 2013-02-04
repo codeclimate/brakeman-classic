@@ -1,3 +1,3 @@
 module Brakeman
-  Version = "1.8.3.codeclimate"
+  Version = "1.9.1.codeclimate"
 end

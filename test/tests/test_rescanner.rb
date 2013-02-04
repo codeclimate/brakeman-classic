@@ -188,7 +188,7 @@ class RescannerTests < Test::Unit::TestCase
   def test_remove_route
     routes = "config/routes.rb"
 
-    before_rescan_of routes do
+    before_rescan_of routes, "rails3.2", :assume_all_routes => false do
       replace routes, "match 'implicit' => 'removal#implicit_render'", ""
     end
 
@@ -249,7 +249,7 @@ class RescannerTests < Test::Unit::TestCase
     assert @original.config[:rails_version], "3.2.6"
     assert_reindex :none
     assert_changes
-    assert_new 1
-    assert_fixed 0
+    assert_new 2
+    assert_fixed 1
   end
 end

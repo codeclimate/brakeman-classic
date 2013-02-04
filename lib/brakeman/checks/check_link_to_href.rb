@@ -34,7 +34,7 @@ class Brakeman::CheckLinkToHref < Brakeman::CheckLinkTo
     #an ignored method call by the code above.
     call = result[:call] = result[:call].dup
     @matched = false
-    url_arg = process call.args.second
+    url_arg = process call.second_arg
 
     #Ignore situations where the href is an interpolated string
     #with something before the user input
@@ -64,6 +64,10 @@ class Brakeman::CheckLinkToHref < Brakeman::CheckLinkTo
 
       # Decided NOT warn on models.  polymorphic_path is called it a model is 
       # passed to link_to (which passes it to url_for)
+
+    elsif array? url_arg
+      # Just like models, polymorphic path/url is called if the argument is 
+      # an array      
 
     elsif hash? url_arg
 

@@ -1,5 +1,4 @@
 require 'set'
-require 'active_support/inflector'
 
 #This is a mixin containing utility methods.
 module Brakeman::Util
@@ -40,10 +39,11 @@ module Brakeman::Util
       downcase
   end
 
-  #Use ActiveSupport::Inflector to pluralize a word.
+  # stupid simple, used to delegate to ActiveSupport
   def pluralize word
-    ActiveSupport::Inflector.pluralize word
+    word + "s"
   end
+
 
   #Takes an Sexp like
   # (:hash, (:lit, :key), (:str, "value"))
@@ -96,12 +96,17 @@ module Brakeman::Util
     nil
   end
 
+  #These are never modified
+  PARAMS_SEXP = Sexp.new(:params)
+  SESSION_SEXP = Sexp.new(:session)
+  COOKIES_SEXP = Sexp.new(:cookies)
+
   #Adds params, session, and cookies to environment
   #so they can be replaced by their respective Sexps.
   def set_env_defaults
-    @env[PARAMETERS] = Sexp.new(:params)
-    @env[SESSION] = Sexp.new(:session)
-    @env[COOKIES] = Sexp.new(:cookies)
+    @env[PARAMETERS] = PARAMS_SEXP
+    @env[SESSION] = SESSION_SEXP
+    @env[COOKIES] = COOKIES_SEXP
   end
 
   #Check if _exp_ represents a hash: s(:hash, {...})

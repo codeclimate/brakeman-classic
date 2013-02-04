@@ -46,6 +46,12 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     Brakeman.debug "Checking version of Rails for CVE-2012-2695"
     check_rails_version_for_cve_2012_2695
 
+    Brakeman.debug "Checking version of Rails for CVE-2012-5664"
+    check_rails_version_for_cve_2012_5664
+
+    Brakeman.debug "Checking version of Rails for CVE-2013-0155"
+    check_rails_version_for_cve_2013_0155
+
     Brakeman.debug "Processing possible SQL calls"
     calls.each do |c|
       process_result c
@@ -121,6 +127,26 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     end
   end
 
+  def check_rails_version_for_cve_2012_5664
+    if version_between?("2.0.0", "2.3.14") || version_between?("3.0.0", "3.0.17") || version_between?("3.1.0", "3.1.8") || version_between?("3.2.0", "3.2.9")
+      warn :warning_type => 'SQL Injection',
+        :message => 'All versions of Rails before 3.0.18, 3.1.9, and 3.2.10 contain a SQL Injection Vulnerability: CVE-2012-5664; Upgrade to 3.2.10, 3.1.9, 3.0.18',
+        :confidence => CONFIDENCE[:high],
+        :file => gemfile_or_environment,
+        :link_path => "https://groups.google.com/d/topic/rubyonrails-security/DCNTNp_qjFM/discussion"
+    end
+  end
+
+  def check_rails_version_for_cve_2013_0155
+    if version_between?("2.0.0", "2.3.15") || version_between?("3.0.0", "3.0.18") || version_between?("3.1.0", "3.1.9") || version_between?("3.2.0", "3.2.10")
+      warn :warning_type => 'SQL Injection',
+        :message => 'All versions of Rails before 3.0.19, 3.1.10, and 3.2.11 contain a SQL Injection Vulnerability: CVE-2013-0155; Upgrade to 3.2.11, 3.1.10, 3.0.19',
+        :confidence => CONFIDENCE[:high],
+        :file => gemfile_or_environment,
+        :link_path => "https://groups.google.com/d/topic/rubyonrails-security/c7jT-EeN9eI/discussion"
+    end
+  end
+
   def process_scope_with_block model_name, args
     scope_name = args[1][1]
     block = args[-1][-1]
@@ -173,37 +199,36 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
 
     call = result[:call]
     method = call.method
-    args = call.args
 
     dangerous_value = case method
                       when :find
-                        check_find_arguments args.second
+                        check_find_arguments call.second_arg
                       when :exists?
-                        check_find_arguments args.first
+                        check_find_arguments call.first_arg
                       when :named_scope, :scope
-                        check_scope_arguments call.arglist
+                        check_scope_arguments call
                       when :find_by_sql, :count_by_sql
-                        check_by_sql_arguments args.first
+                        check_by_sql_arguments call.first_arg
                       when :calculate
-                        check_find_arguments args[2]
+                        check_find_arguments call.third_arg
                       when :last, :first, :all
-                        check_find_arguments args.first
+                        check_find_arguments call.first_arg
                       when :average, :count, :maximum, :minimum, :sum
-                        if args.length > 2
-                          unsafe_sql?(args.first) or check_find_arguments(args.last)
+                        if call.length > 5
+                          unsafe_sql?(call.first_arg) or check_find_arguments(call.last_arg)
                         else
-                          check_find_arguments args.last
+                          check_find_arguments call.last_arg
                         end
                       when :where, :having
                         check_query_arguments call.arglist
                       when :order, :group, :reorder
                         check_order_arguments call.arglist
                       when :joins
-                        check_joins_arguments args.first
+                        check_joins_arguments call.first_arg
                       when :from, :select
-                        unsafe_sql? args.first
+                        unsafe_sql? call.first_arg
                       when :lock
-                        check_lock_arguments args.first
+                        check_lock_arguments call.first_arg
                       else
                         Brakeman.debug "Unhandled SQL method: #{method}"
                       end
@@ -226,8 +251,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
         :confidence => confidence
     end
 
-    if check_for_limit_or_offset_vulnerability args.last
-      if include_user_input? args.last
+    if check_for_limit_or_offset_vulnerability call.last_arg
+      if include_user_input? call.last_arg
         confidence = CONFIDENCE[:high]
       else
         confidence = CONFIDENCE[:low]
@@ -259,9 +284,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     unsafe_sql? arg
   end
 
-  def check_scope_arguments args
-    return unless node_type? args, :arglist
-    scope_arg = args[2] #first arg is name of scope
+  def check_scope_arguments call
+    scope_arg = call.second_arg #first arg is name of scope
 
     if node_type? scope_arg, :iter
       unsafe_sql? scope_arg.block
@@ -488,9 +512,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
 
     target = exp.target
     method = exp.method
-    args = exp.args
 
-    if string? target or string? args.first
+    if string? target or string? exp.first_arg
       if STRING_METHODS.include? method
         return exp
       end
@@ -502,7 +525,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
   IGNORE_METHODS_IN_SQL = Set[:id, :merge_conditions, :table_name, :to_i, :to_f,
     :sanitize_sql, :sanitize_sql_array, :sanitize_sql_for_assignment,
     :sanitize_sql_for_conditions, :sanitize_sql_hash,
-    :sanitize_sql_hash_for_assignment, :sanitize_sql_hash_for_conditions]
+    :sanitize_sql_hash_for_assignment, :sanitize_sql_hash_for_conditions,
+    :to_sql]
 
   def safe_value? exp
     return true unless sexp? exp

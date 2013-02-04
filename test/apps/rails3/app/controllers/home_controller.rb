@@ -102,11 +102,28 @@ class HomeController < ApplicationController
   end
 
   def test_yaml_file_access
-    #Should not warn
+    #Should not warn about access, but about remote code execution
     YAML.load "some/path/#{params[:user][:file]}"
 
     #Should warn
     YAML.parse_file("whatever/" + params[:file_name])
+  end
+
+  def test_more_mass_assignment_methods
+    #Additional mass assignment methods
+    User.first_or_create(params[:user])
+    User.first_or_create!(:name => params[:user][:name])
+    User.first_or_initialize!(params[:user])
+    User.update(params[:id], :alive => false) #No warning
+    User.update(1, params[:update])
+    User.find(1).assign_attributes(params[:update])
+  end
+
+  def test_yaml_load
+    YAML.load params[:input]
+    YAML.load some_method #No warning
+    YAML.load x(cookies[:store])
+    YAML.load User.first.bad_stuff
   end
 
   private

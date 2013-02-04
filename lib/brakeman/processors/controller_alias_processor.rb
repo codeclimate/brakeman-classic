@@ -1,5 +1,6 @@
 require 'brakeman/processors/alias_processor'
 require 'brakeman/processors/lib/render_helper'
+require 'brakeman/processors/lib/find_return_value'
 
 #Processes aliasing in controllers, but includes following
 #renders in routes and putting variables into templates
@@ -112,10 +113,18 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
   #Look for calls to head()
   def process_call exp
     exp = super
+    return exp unless call? exp
 
-    if call? exp and exp.method == :head
+    method = exp.method
+
+    if method == :head
       @rendered = true
+    elsif @tracker.options[:interprocedural] and
+      @current_method and (exp.target.nil? or exp.target.node_type == :self)
+
+      exp = get_call_value(exp)
     end
+
     exp
   end
 
@@ -149,7 +158,7 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
       end
     else
       processor = Brakeman::AliasProcessor.new @tracker
-      processor.process_safely(method.body_list)
+      processor.process_safely(method.body_list, only_ivars(:include_request_vars))
 
       ivars = processor.only_ivars(:include_request_vars).all
 
@@ -201,9 +210,12 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
 
   #Returns true if the given method name is also a route
   def route? method
-    return true if @tracker.routes[:allow_all_actions] or @tracker.options[:assume_all_routes]
-    routes = @tracker.routes[@current_class]
-    routes and (routes == :allow_all_actions or routes.include? method)
+    if @tracker.routes[:allow_all_actions] or @tracker.options[:assume_all_routes]
+      true
+    else
+      routes = @tracker.routes[@current_class]
+      routes and (routes == :allow_all_actions or routes.include? method)
+    end
   end
 
   #Get list of filters, including those that are inherited

@@ -11,7 +11,7 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
       :controller => 1,
       :model => 3,
       :template => 2,
-      :warning => 14 }
+      :warning => 18 }
   end
 
   def report
@@ -258,6 +258,14 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
       :file => /Gemfile/
   end
 
+  def test_sql_injection_CVE_2012_5664
+    assert_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.18,\ 3\.1/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
   def test_to_json
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -266,4 +274,36 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
       :confidence => 0,
       :file => /users\/to_json\.html\.erb/
   end  
+
+  def test_session_secret_token
+    assert_warning :type => :warning,
+      :warning_type => "Session Setting",
+      :line => 9,
+      :message => /^Session\ secret\ should\ not\ be\ included\ in/,
+      :confidence => 0,
+      :file => /session_store\.rb/
+  end
+
+  def test_sql_injection_CVE_2013_0155
+    assert_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.19,\ 3\.1/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_parsing_disable_CVE_2013_0156
+    assert_no_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :message => /^Rails\ 2\.3\.14\ has\ a\ remote\ code\ execution/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_remote_code_execution_CVE_2013_0156
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :message => /^Parsing\ YAML\ request\ parameters\ enables\ /,
+      :confidence => 0
+  end
 end

@@ -29,7 +29,13 @@ class Brakeman::CheckMassAssignment < Brakeman::BaseCheck
       :update_attributes!,
       :create,
       :create!,
-      :build]
+      :build,
+      :first_or_create,
+      :first_or_create!,
+      :first_or_initialize!,
+      :assign_attributes,
+      :update
+    ]
 
     Brakeman.debug "Processing possible mass assignment calls"
     calls.each do |result|
@@ -78,13 +84,19 @@ class Brakeman::CheckMassAssignment < Brakeman::BaseCheck
 
   #Want to ignore calls to Model.new that have no arguments
   def check_call call
-    args = process_all! call.args
+    process_call_args call
 
-    if args.empty? #empty new()
+    if call.method == :update
+      arg = call.second_arg
+    else
+      arg = call.first_arg
+    end
+
+    if arg.nil? #empty new()
       false
-    elsif hash? args.first and not include_user_input? args.first
+    elsif hash? arg and not include_user_input? arg
       false
-    elsif all_literals? args
+    elsif all_literal_args? call
       false
     else
       true
@@ -93,17 +105,30 @@ class Brakeman::CheckMassAssignment < Brakeman::BaseCheck
 
   LITERALS = Set[:lit, :true, :false, :nil, :string]
 
-  def all_literals? args
-    args.all? do |arg|
-      if sexp? arg
-        if arg.node_type == :hash
-          all_literals? arg
-        else
-          LITERALS.include? arg.node_type
-        end
-      else
-        true
+  def all_literal_args? exp
+    if call? exp
+      exp.each_arg do |arg|
+        return false unless literal? arg
       end
+
+      true
+    else
+      exp.all? do |arg|
+        literal? arg
+      end
+    end
+
+  end
+
+  def literal? exp
+    if sexp? exp
+      if exp.node_type == :hash
+        all_literal_args? exp
+      else
+        LITERALS.include? exp.node_type
+      end
+    else
+      true
     end
   end
 end

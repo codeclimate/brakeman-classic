@@ -1,6 +1,6 @@
 abort "Please run using test/test.rb" unless defined? BrakemanTester
 
-Rails31 = BrakemanTester.run_scan "rails3.1", "Rails 3.1", :rails3 => true, :parallel_checks => false
+Rails31 = BrakemanTester.run_scan "rails3.1", "Rails 3.1", :rails3 => true, :parallel_checks => false, :interprocedural => true
 
 class Rails31Tests < Test::Unit::TestCase
   include BrakemanTester::FindWarning
@@ -12,10 +12,10 @@ class Rails31Tests < Test::Unit::TestCase
 
   def expected
     @expected ||= {
-      :model => 0,
-      :template => 17,
+      :model => 3,
+      :template => 22,
       :controller => 1,
-      :warning => 48 }
+      :warning => 51 }
   end
 
   def test_without_protection
@@ -145,6 +145,14 @@ class Rails31Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "SQL Injection",
       :message => /CVE-2012-2695/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_sql_injection_CVE_2012_5664
+    assert_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.18,\ 3\.1/,
       :confidence => 0,
       :file => /Gemfile/
   end
@@ -581,6 +589,51 @@ class Rails31Tests < Test::Unit::TestCase
       :file => /_bio\.html\.erb/
   end
 
+  def test_xss_helper_params_return
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 0,
+      :file => /test_less_simple_helpers\.html\.erb/
+  end
+
+  def test_xss_helper_with_args
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 3,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 0,
+      :file => /test_less_simple_helpers\.html\.erb/
+  end
+
+  def test_xss_helper_assign_ivar
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 5,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 0,
+      :file => /test_less_simple_helpers\.html\.erb/
+  end
+
+  def test_xss_helper_assign_ivar_twice
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 0,
+      :file => /test_assign_twice\.html\.erb/
+  end
+
+  def test_xss_helper_model_return
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Unescaped\ model\ attribute/,
+      :confidence => 0,
+      :file => /test_simple_helper\.html\.erb/
+  end
+
   def test_xss_multiple_exp_in_string_interpolation
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -659,6 +712,22 @@ class Rails31Tests < Test::Unit::TestCase
       :file => /Gemfile/
   end
 
+  def test_sql_injection_CVE_2013_0155
+    assert_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.19,\ 3\.1/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_remove_code_execution_CVE_2013_0156_fix
+    assert_no_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :message => /^Rails\ 3\.1\.0\ has\ a\ remote\ code\ execution\ /,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
   def test_to_json_with_overwritten_config
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -676,4 +745,49 @@ class Rails31Tests < Test::Unit::TestCase
       :confidence => 0,
       :file => /other_controller\.rb/
   end
+
+  def test_to_sql_interpolation
+    assert_no_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :line => 181,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :file => /product\.rb/
+  end
+
+  def test_validates_format
+    assert_warning :type => :model,
+      :warning_type => "Format Validation",
+      :line => 2,
+      :message => /^Insufficient\ validation\ for\ 'username'\ u/,
+      :confidence => 0,
+      :file => /account\.rb/
+  end
+
+  def test_validates_format_with
+    assert_warning :type => :model,
+      :warning_type => "Format Validation",
+      :line => 3,
+      :message => /^Insufficient\ validation\ for\ 'phone'\ usin/,
+      :confidence => 0,
+      :file => /account\.rb/
+  end
+
+  def test_validates_format_with_short_regex
+    assert_warning :type => :model,
+      :warning_type => "Format Validation",
+      :line => 4,
+      :message => /^Insufficient\ validation\ for\ 'first_name'/,
+      :confidence => 0,
+      :file => /account\.rb/
+  end
+
+  def test_session_secret_token
+    assert_warning :type => :warning,
+      :warning_type => "Session Setting",
+      :line => 7,
+      :message => /^Session\ secret\ should\ not\ be\ included\ in/,
+      :confidence => 0,
+      :file => /secret_token\.rb/
+  end 
 end

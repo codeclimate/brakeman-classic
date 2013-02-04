@@ -14,8 +14,8 @@ class Rails3Tests < Test::Unit::TestCase
     @expected ||= {
       :controller => 1,
       :model => 5,
-      :template => 30,
-      :warning => 31
+      :template => 32,
+      :warning => 47
     }
   end
 
@@ -61,6 +61,24 @@ class Rails3Tests < Test::Unit::TestCase
       :message => /^Possible command injection near line 36:/,
       :confidence => 0,
       :file => /home_controller\.rb/
+  end
+
+  def test_command_injection_non_user_input_backticks
+    assert_warning :type => :warning,
+      :warning_type => "Command Injection",
+      :line => 48,
+      :message => /^Possible\ command\ injection/,
+      :confidence => 1,
+      :file => /other_controller\.rb/
+  end
+
+  def test_command_injection_non_user_input_system
+    assert_warning :type => :warning,
+      :warning_type => "Command Injection",
+      :line => 49,
+      :message => /^Possible\ command\ injection/,
+      :confidence => 1,
+      :file => /other_controller\.rb/
   end
 
   def test_file_access_concatenation
@@ -209,6 +227,14 @@ class Rails3Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "SQL Injection",
       :message => /CVE-2012-2695/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_sql_injection_CVE_2012_5664
+    assert_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.18,\ 3\.1/,
       :confidence => 0,
       :file => /Gemfile/
   end
@@ -417,6 +443,23 @@ class Rails3Tests < Test::Unit::TestCase
       :file => /test_params\.html\.erb/            
   end  
 
+  def test_polymorphic_url_in_href
+    assert_no_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 10,
+      :message => /^Unsafe parameter value in link_to href/,
+      :confidence => 1,
+      :file => /test_model\.html\.erb/  
+
+    assert_no_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 12,
+      :message => /^Unsafe parameter value in link_to href/,
+      :confidence => 1,
+      :file => /test_model\.html\.erb/  
+  end
+
+
   def test_file_access_in_template
     assert_warning :type => :template,
       :warning_type => "File Access",
@@ -571,6 +614,60 @@ class Rails3Tests < Test::Unit::TestCase
       :file => /account\.rb/
   end
 
+  def test_mass_assign_with_strong_params
+    assert_no_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 53,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /other_controller\.rb/
+  end
+
+  def test_mass_assignment_first_or_create
+    assert_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 114,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_mass_assignment_first_or_create!
+    assert_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 115,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 2,
+      :file => /home_controller\.rb/
+  end
+
+  def test_mass_assignment_first_or_initialize!
+    assert_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 116,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_mass_assignment_update
+    assert_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 118,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_mass_assignment_assign_attributes
+    assert_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 119,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
   def test_translate_bug
     assert_warning :type => :warning,
       :warning_type => "Cross Site Scripting",
@@ -707,5 +804,84 @@ class Rails3Tests < Test::Unit::TestCase
       :message => /^Vulnerability\ in\ mail_to\ using\ javascrip/,
       :confidence => 0,
       :file => /Gemfile/
+  end
+
+  def test_sql_injection_CVE_2013_0155
+    assert_warning :type => :warning,
+      :warning_type => "SQL Injection",
+      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.19,\ 3\.1/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_remote_code_execution_CVE_2013_0156_fix
+    assert_no_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :message => /^Rails\ 3\.0\.3\ has\ a\ remote\ code\ execution\ /,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_http_only_session_setting
+    assert_warning :type => :warning,
+      :warning_type => "Session Setting",
+      :line => 3,
+      :message => /^Session\ cookies\ should\ be\ set\ to\ HTTP\ on/,
+      :confidence => 0,
+      :file => /session_store\.rb/
+  end
+
+  def test_secure_only_session_setting
+    assert_warning :type => :warning,
+      :warning_type => "Session Setting",
+      :line => 3,
+      :message => /^Session\ cookie\ should\ be\ set\ to\ secure\ o/,
+      :confidence => 0,
+      :file => /session_store\.rb/
+  end
+
+  def test_session_secret_token
+    assert_warning :type => :warning,
+      :warning_type => "Session Setting",
+      :line => 7,
+      :message => /^Session\ secret\ should\ not\ be\ included\ in/,
+      :confidence => 0,
+      :file => /secret_token\.rb/
+  end
+
+  def test_remote_code_execution_yaml_load_params_interpolated
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 106,
+      :message => /^YAML\.load\ called\ with\ parameter\ value/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_remote_code_execution_yaml_load_params
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 123,
+      :message => /^YAML\.load\ called\ with\ parameter\ value/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_remote_code_execution_yaml_load_indirect_cookies
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 125,
+      :message => /^YAML\.load\ called\ with\ cookies\ value/,
+      :confidence => 1,
+      :file => /home_controller\.rb/
+  end
+
+  def test_remote_code_execution_yaml_load_model_attribue
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 126,
+      :message => /^YAML\.load\ called\ with\ model\ attribute/,
+      :confidence => 1,
+      :file => /home_controller\.rb/
   end
 end

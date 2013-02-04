@@ -50,8 +50,8 @@ module Brakeman::Options
         opts.separator ""
         opts.separator "Scanning options:"
 
-        opts.on "-a", "--assume-routes", "Assume all controller methods are actions" do
-          options[:assume_all_routes] = true
+        opts.on "-a", "--[no-]assume-routes", "Assume all controller methods are actions (default)" do |assume|
+          options[:assume_all_routes] = assume
         end
 
         opts.on "-e", "--escape-html", "Escape HTML by default" do
@@ -69,6 +69,10 @@ module Brakeman::Options
 
         opts.on "--ignore-protected", "Consider models with attr_protected safe" do
           options[:ignore_attr_protected] = true
+        end
+
+        opts.on "--interprocedural", "Process method calls to known methods" do
+          options[:interprocedural] = true
         end
 
         opts.on "--no-branching", "Disable flow sensitivity on conditionals" do
