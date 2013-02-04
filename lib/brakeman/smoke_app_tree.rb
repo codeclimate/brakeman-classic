@@ -6,7 +6,6 @@ require "uri"
 
 module Brakeman
   class SmokeAppTree < AppTree
-    DEFAULT_BRANCH_NAME = "origin/master"
 
     def initialize(url, skip_files = nil)
       @uri = URI.parse(url)
@@ -75,11 +74,7 @@ module Brakeman
     end
 
     def commit
-      @commit ||= ref.commit
-    end
-
-    def ref
-      @ref ||= grit_repo.refs.find { |r| r.name == branch_name }
+      @commit ||= grit_repo.commit(commit_sha)
     end
 
     def grit_repo
@@ -93,11 +88,8 @@ module Brakeman
       @repo_id ||= uri_parts[1]
     end
 
-    def branch_name
-      @branch_name ||= begin
-        from_uri = uri_parts[2..-1].join("/")
-        from_uri.present? ? from_uri : DEFAULT_BRANCH_NAME
-      end
+    def commit_sha
+      @commit_sha ||= uri_parts[2..-1]
     end
 
     def uri_parts
