@@ -11,22 +11,22 @@ class Brakeman::CheckDefaultRoutes < Brakeman::BaseCheck
   def run_check
     if tracker.routes[:allow_all_actions]
       #Default routes are enabled globally
-      warn :warning_type => "Default Routes", 
+      warn :warning_type => "Default Routes",
         :message => "All public methods in controllers are available as actions in routes.rb",
-        :line => tracker.routes[:allow_all_actions].line, 
+        :line => tracker.routes[:allow_all_actions].line,
         :confidence => CONFIDENCE[:high],
-        :file => "#{tracker.options[:app_path]}/config/routes.rb"
+        :file => "config/routes.rb"
     else #Report each controller separately
       Brakeman.debug "Checking each controller for default routes"
 
       tracker.routes.each do |name, actions|
         if actions.is_a? Array and actions[0] == :allow_all_actions
           warn :controller => name,
-            :warning_type => "Default Routes", 
+            :warning_type => "Default Routes",
             :message => "Any public method in #{name} can be used as an action.",
             :line => actions[1],
             :confidence => CONFIDENCE[:med],
-            :file => "#{tracker.options[:app_path]}/config/routes.rb"
+            :file => "config/routes.rb"
         end
       end
     end
