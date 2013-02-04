@@ -21,7 +21,7 @@ class Brakeman::CheckSessionSettings < Brakeman::BaseCheck
                 tracker.config[:rails][:action_controller] and
                 tracker.config[:rails][:action_controller][:session]
 
-    check_for_issues settings, "config/environment.rb"
+    check_for_issues settings, "#{tracker.options[:app_path]}/config/environment.rb"
 
     if tracker.initializers["session_store.rb"]
       process tracker.initializers["session_store.rb"]
@@ -39,15 +39,15 @@ class Brakeman::CheckSessionSettings < Brakeman::BaseCheck
   #in Rails 3.x apps
   def process_attrasgn exp
     if not tracker.options[:rails3] and exp.target == @session_settings and exp.method == :session=
-      check_for_issues exp.first_arg, "config/initializers/session_store.rb"
+      check_for_issues exp.first_arg, "#{tracker.options[:app_path]}/config/initializers/session_store.rb"
     end
 
     if tracker.options[:rails3] and settings_target?(exp.target) and
       exp.method == :secret_token= and string? exp.first_arg
 
-      warn_about_secret_token exp, "config/initializers/secret_token.rb"
+      warn_about_secret_token exp, "#{tracker.options[:app_path]}/config/initializers/secret_token.rb"
     end
-
+      
     exp
   end
 
@@ -55,9 +55,9 @@ class Brakeman::CheckSessionSettings < Brakeman::BaseCheck
   #in Rails 3.x apps
   def process_call exp
     if tracker.options[:rails3] and settings_target?(exp.target) and exp.method == :session_store
-      check_for_rails3_issues exp.second_arg, "config/initializers/session_store.rb"
+      check_for_rails3_issues exp.second_arg, "#{tracker.options[:app_path]}/config/initializers/session_store.rb"
     end
-
+      
     exp
   end
 
