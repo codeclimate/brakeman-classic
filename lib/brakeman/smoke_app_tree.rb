@@ -13,7 +13,7 @@ module Brakeman
     end
 
     def valid?
-      true
+      exists?("config/environment.rb")
     end
 
     def expand_path(path)
