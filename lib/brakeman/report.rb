@@ -713,7 +713,8 @@ HEADER
     return nil if warning.file.nil?
 
     if @tracker.options[:relative_paths] or relative
-      Pathname.new(warning.file).relative_path_from(Pathname.new(tracker.options[:app_path])).to_s
+      Pathname.new(warning.file).expand_path.
+        relative_path_from(Pathname.new(tracker.options[:app_path]).expand_path).to_s
     else
       warning.file
     end
