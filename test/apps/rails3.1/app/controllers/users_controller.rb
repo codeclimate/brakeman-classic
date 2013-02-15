@@ -135,6 +135,23 @@ class UsersController < ApplicationController
     assign_ivar
   end
 
+  def update_all_users
+    #Unsafe
+    User.update_all params[:yaysql]
+    User.update_all "name = 'Bob'", "name = '#{params[:name]}'"
+    User.update_all "old = TRUE", ["name = '#{params[:name]}' AND age > ?", params[:age]]
+    User.update_all "old = TRUE", ["name = ? AND age > ?", params[:name], params[:age]], :order => params[:order]
+
+    User.where(:name => params[:name]).update_all(params[:update])
+    User.where(:admin => true).update_all("setting = #{params[:setting]}")
+    User.where(:name => params[:name]).update_all(["active = ?, age = #{params[:age]}", params[:active]]).limit(1)
+
+    #Safe(ish)
+    User.update_all ["name = ?", params[:new_name]], ["name = ?", params[:old_name]]
+    User.update_all({:old => true}, ["name = ? AND age > ?", params[:name], params[:age]])
+    User.update_all({:admin => true}, { :name => params[:name] }, :limit => params[:limit])
+  end
+
   private
 
   def simple_helper
@@ -151,6 +168,10 @@ class UsersController < ApplicationController
 
   def assign_ivar
     @some_value = params[:badthing]
+  end
+
+  def pluck_something
+    User.pluck params[:column]
   end
 
   include UserMixin
