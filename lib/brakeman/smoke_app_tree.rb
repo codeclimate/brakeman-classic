@@ -50,8 +50,11 @@ module Brakeman
   private
 
     def find_paths(directory, extensions = "*.rb")
-      (glob("#{directory}/**/#{extensions}") +
-      glob("#{directory}/#{extensions}")).uniq
+      all_paths = glob("#{directory}/**/#{extensions}") + glob("#{directory}/#{extensions}")
+
+      all_paths.sort.uniq.tap do |paths|
+        reject_skipped_files(paths)
+      end
     end
 
     def glob(pattern)
