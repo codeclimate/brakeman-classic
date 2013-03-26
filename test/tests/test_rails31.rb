@@ -14,8 +14,8 @@ class Rails31Tests < Test::Unit::TestCase
     @expected ||= {
       :model => 3,
       :template => 22,
-      :controller => 1,
-      :warning => 60 }
+      :controller => 4,
+      :warning => 68 }
   end
 
   def test_without_protection
@@ -499,6 +499,33 @@ class Rails31Tests < Test::Unit::TestCase
       :file => /users_controller\.rb/
   end
 
+  def test_authentication_skip_before_filter
+    assert_warning :type => :controller,
+      :warning_type => "Authentication",
+      :line => 3,
+      :message => /^Use\ whitelist\ \(:only\ =>\ \[\.\.\]\)\ when\ skipp/,
+      :confidence => 1,
+      :file => /admin_controller\.rb/
+  end
+
+  def test_authentication_skip_filter
+    assert_warning :type => :controller,
+      :warning_type => "Authentication",
+      :line => 5,
+      :message => /^Use\ whitelist\ \(:only\ =>\ \[\.\.\]\)\ when\ skipp/,
+      :confidence => 1,
+      :file => /admin_controller\.rb/
+  end
+
+  def test_authentication_skip_require_user
+    assert_warning :type => :controller,
+      :warning_type => "Authentication",
+      :line => 4,
+      :message => /^Use\ whitelist\ \(:only\ =>\ \[\.\.\]\)\ when\ skipp/,
+      :confidence => 1,
+      :file => /admin_controller\.rb/
+  end
+
   def test_controller_mixin
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -720,7 +747,7 @@ class Rails31Tests < Test::Unit::TestCase
       :file => /Gemfile/
   end
 
-  def test_remove_code_execution_CVE_2013_0156_fix
+  def test_remote_code_execution_CVE_2013_0156_fix
     assert_no_warning :type => :warning,
       :warning_type => "Remote Code Execution",
       :message => /^Rails\ 3\.1\.0\ has\ a\ remote\ code\ execution\ /,
@@ -732,6 +759,40 @@ class Rails31Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "Denial of Service",
       :message => /^json\ gem\ version\ 1\.5\.4\ has\ a\ symbol\ crea/,
+      :confidence => 1,
+      :file => /Gemfile/
+  end
+
+  def test_xss_sanitize_CVE_2013_1857
+    assert_warning :type => :warning,
+      :warning_type => "Cross Site Scripting",
+      :line => 64,
+      :message => /^Rails\ 3\.1\.0\ has\ a\ vulnerability\ in\ sanit/,
+      :confidence => 0,
+      :file => /other_controller\.rb/
+  end
+
+  def test_xss_sanitize_css_CVE_2013_1855
+    assert_warning :type => :warning,
+      :warning_type => "Cross Site Scripting",
+      :line => 65,
+      :message => /^Rails\ 3\.1\.0\ has\ a\ vulnerability\ in\ sanitize_css/,
+      :confidence => 0,
+      :file => /other_controller\.rb/
+  end
+
+  def test_xml_jruby_parsing_CVE_2013_1856_workaround
+    assert_no_warning :type => :warning,
+      :warning_type => "File Access",
+      :message => /^Rails\ 3\.1\.0\ with\ JRuby\ has\ a\ vulnerabili/,
+      :confidence => 0,
+      :file => /Gemfile/
+  end
+
+  def test_denial_of_service_CVE_2013_1854
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :message => /^Rails\ 3\.1\.0\ has\ a\ denial\ of\ service\ vul/,
       :confidence => 1,
       :file => /Gemfile/
   end
@@ -869,5 +930,51 @@ class Rails31Tests < Test::Unit::TestCase
       :message => /^Session\ secret\ should\ not\ be\ included\ in/,
       :confidence => 0,
       :file => /secret_token\.rb/
-  end 
+  end
+
+  def test_unsafe_reflection_constantize
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 9,
+      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :confidence => 0,
+      :file => /admin_controller\.rb/
+  end
+
+
+  def test_unsafe_reflection_safe_constantize
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 12,
+      :message => /^Unsafe\ Reflection\ method\ safe_constantiz/,
+      :confidence => 0,
+      :file => /admin_controller\.rb/
+  end
+
+  def test_unsafe_reflection_qualified_const_get
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 14,
+      :message => /^Unsafe\ Reflection\ method\ qualified_const/,
+      :confidence => 0,
+      :file => /admin_controller\.rb/
+  end
+
+
+  def test_unsafe_relection_const_get
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 16,
+      :message => /^Unsafe\ Reflection\ method\ const_get\ calle/,
+      :confidence => 0,
+      :file => /admin_controller\.rb/
+  end
+  def test_unsafe_reflection_constantize_indirect
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 18,
+      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :confidence => 1,
+      :file => /admin_controller\.rb/
+  end
 end

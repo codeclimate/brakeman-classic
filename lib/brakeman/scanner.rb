@@ -8,6 +8,7 @@ begin
   require 'sass'
   require 'erb'
   require 'erubis'
+  require 'slim'
   require 'brakeman/processor'
   require 'brakeman/app_tree'
   require 'brakeman/parsers/rails2_erubis'
@@ -23,8 +24,8 @@ end
 class Brakeman::Scanner
   attr_reader :options
 
-  RUBY_1_9 = !!(RUBY_VERSION =~ /^1\.9/)
-  KNOWN_TEMPLATE_EXTENSIONS = /.*\.(erb|haml|rhtml)$/
+  RUBY_1_9 = !!(RUBY_VERSION >= "1.9.0")
+  KNOWN_TEMPLATE_EXTENSIONS = /.*\.(erb|haml|rhtml|slim)$/
 
   #Pass in path to the root of the Rails application
   def initialize options, processor = nil
@@ -289,6 +290,11 @@ class Brakeman::Scanner
       elsif type == :haml
         src = Haml::Engine.new(text,
                                :escape_html => !!tracker.config[:escape_html]).precompiled
+        parsed = parse_ruby src
+      elsif type == :slim
+        src = Slim::Template.new(:disable_capture => true,
+                                 :generator => Temple::Generators::RailsOutputBuffer) { text }.precompiled_template
+
         parsed = parse_ruby src
       else
         tracker.error "Unkown template type in #{path}"

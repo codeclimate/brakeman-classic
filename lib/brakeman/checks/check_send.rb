@@ -22,19 +22,11 @@ class Brakeman::CheckSend < Brakeman::BaseCheck
     if input = has_immediate_user_input?(result[:call].first_arg)
       warn :result => result,
         :warning_type => "Dangerous Send",
+        :warning_code => :dangerous_send,
         :message => "User controlled method execution",
         :code => result[:call],
         :user_input => input.match,
         :confidence => CONFIDENCE[:high]
-    end
-
-    if input = has_immediate_user_input?(target)
-      warn :result => result,
-        :warning_type => "Dangerous Send",
-        :message => "User defined target of method invocation",
-        :code => result[:call],
-        :user_input => input.match,
-        :confidence => CONFIDENCE[:med]
     end
   end
 end

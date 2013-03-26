@@ -11,14 +11,14 @@ class Rails2Tests < Test::Unit::TestCase
       @expected ||= {
         :controller => 1,
         :model => 3,
-        :template => 41,
-        :warning => 40 }
+        :template => 43,
+        :warning => 45 }
     else
       @expected ||= {
         :controller => 1,
         :model => 3,
-        :template => 41,
-        :warning => 41 }
+        :template => 43,
+        :warning => 46 }
     end
   end
 
@@ -719,6 +719,16 @@ class Rails2Tests < Test::Unit::TestCase
       :file => /test_content_tag\.html\.erb/
   end
 
+  #Uh...maybe this shouldn't be a warning
+  def test_cross_site_scripting_in_sanitize_method
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 5,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 2,
+      :file => /not_used\.html\.erb/
+  end
+
   def test_xss_content_tag_unescaped_on_purpose
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -753,7 +763,7 @@ class Rails2Tests < Test::Unit::TestCase
       :confidence => 0,
       :file => /home_controller\.rb/
 
-    assert_warning :type => :warning,
+    assert_no_warning :type => :warning,
       :warning_type => "Dangerous Send",
       :line => 90,
       :message => /\AUser defined target of method invocation/,
@@ -815,6 +825,23 @@ class Rails2Tests < Test::Unit::TestCase
       :warning_type => "Remote Code Execution",
       :message => /^Rails\ 2\.3\.11\ has\ a\ serious\ JSON\ parsing\ /,
       :confidence => 0,
+      :file => /environment\.rb/
+  end
+
+  def test_xss_sanitize_CVE_2013_1857
+    assert_warning :type => :template,
+      :warning_type => "Cross Site Scripting",
+      :line => 5,
+      :message => /^Rails\ 2\.3\.11\ has\ a\ vulnerability\ in\ sani/,
+      :confidence => 0,
+      :file => /not_used\.html\.erb/
+  end
+
+  def test_denial_of_service_CVE_2013_1854
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :message => /^Rails\ 2\.3\.11\ has\ a\ denial\ of\ service\ vul/,
+      :confidence => 1,
       :file => /environment\.rb/
   end
 
@@ -909,11 +936,59 @@ class Rails2Tests < Test::Unit::TestCase
   end
 
   def test_dangerous_try_on_user_input
-    assert_warning :type => :warning,
+    assert_no_warning :type => :warning,
       :warning_type => "Dangerous Send",
       :line => 160,
       :message => /^User\ defined\ target\ of\ method\ invocation/,
       :confidence => 1,
       :file => /home_controller\.rb/
   end
+
+  def test_unsafe_reflection_constantize
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 89,
+      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_unsafe_reflection_constantize_2
+    assert_warning :type => :warning,
+      :warning_type => "Remote Code Execution",
+      :line => 160,
+      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_unsafe_symbol_creation
+    [40,41].each do |line|
+      assert_warning :type => :warning,
+        :warning_type => "Denial of Service",
+        :line => line,
+        :message => /^Symbol\ conversion\ from\ unsafe\ string/,
+        :confidence => 0,
+        :file => /application_controller\.rb/
+     end
+  end
+
+  def test_unsafe_symbol_creation_2
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :line => 83,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_unsafe_symbol_creation_3
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :line => 29,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string/,
+      :confidence => 1,
+      :file => /application_controller\.rb/
+  end
+
 end

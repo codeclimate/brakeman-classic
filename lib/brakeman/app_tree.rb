@@ -1,6 +1,8 @@
 module Brakeman
   class AppTree
-    VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb]
+    VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb html.slim]
+
+    attr_reader :root
 
     def self.from_options(options)
       # Convert files into Regexp for matching
@@ -70,7 +72,7 @@ module Brakeman
     end
 
     def layout_exists?(name)
-      pattern = "#{@root}/app/views/layouts/#{name}.html.{erb,haml}"
+      pattern = "#{@root}/app/views/layouts/#{name}.html.{erb,haml,slim}"
       !Dir.glob(pattern).empty?
     end
 
