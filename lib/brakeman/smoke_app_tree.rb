@@ -1,15 +1,63 @@
 require "brakeman/app_tree"
 require "active_support/core_ext"
+require "pathname"
 require "grit"
 require "bertrpc"
 require "uri"
 
 module Brakeman
   class SmokeAppTree < AppTree
+    class GitTree
+      def initialize(uri)
+        @uri = uri
+      end
+
+      def read_blob(blob_id)
+        grit_repo.blob(blob_id).data
+      end
+
+      def contents
+        tree_id = commit.tree.id
+        output = grit_repo.git.native(:ls_tree, { r: true }, tree_id)
+        grit_tree = ::Grit::Tree.allocate.construct_initialize(grit_repo, tree_id, output)
+        grit_tree.contents
+      end
+
+    private
+
+      def commit
+        @commit ||= grit_repo.commit(commit_sha)
+      end
+
+      def grit_repo
+        @grit_repo ||= ::Grit::Repo.allocate.tap do |r|
+          r.path = "#{repo_id}.git"
+          r.git = SmokeClient.new(@uri)
+        end
+      end
+
+      def repo_id
+        @repo_id ||= uri_parts[1]
+      end
+
+      def commit_sha
+        @commit_sha ||= uri_parts[2]
+      end
+
+      def uri_parts
+        @uri_parts ||= @uri.path.sub(/^\//, "").split("/")
+      end
+    end
+
+    attr_writer :git_tree
 
     def initialize(url, skip_files = nil)
-      @uri = URI.parse(url)
+      uri = URI.parse(url)
+      uri_parts = uri.path.sub(/^\//, "").split("/")
+
+      @git_tree = GitTree.new(uri)
       @skip_files = skip_files
+      @prefix = uri_parts[3..-1].to_a.join("/")
     end
 
     def valid?
@@ -21,7 +69,7 @@ module Brakeman
     end
 
     def read(path)
-      grit_repo.blob(file_index[path]).data
+      @git_tree.read_blob(file_index[apply_prefix(path)])
     end
 
     def read_path(path)
@@ -33,7 +81,7 @@ module Brakeman
     end
 
     def exists?(path)
-      file_index[path]
+      file_index[apply_prefix(path)]
     end
 
     def template_paths
@@ -49,8 +97,17 @@ module Brakeman
 
   private
 
+    def apply_prefix(path)
+      if @prefix.to_s.size > 0
+        File.join(@prefix, path)
+      else
+        path
+      end
+    end
+
     def find_paths(directory, extensions = "*.rb")
-      all_paths = glob("#{directory}/**/#{extensions}") + glob("#{directory}/#{extensions}")
+      all_paths = glob("#{directory}/**/#{extensions}") +
+        glob("#{directory}/#{extensions}")
 
       all_paths.sort.uniq.tap do |paths|
         reject_skipped_files(paths)
@@ -58,45 +115,26 @@ module Brakeman
     end
 
     def glob(pattern)
-      file_index.keys.select do |path|
-        File.fnmatch(pattern, path)
+      matching_paths = file_index.keys.select do |path|
+        File.fnmatch(apply_prefix(pattern), path)
+      end
+      matching_paths.map { |path| remove_prefix(path) }
+    end
+
+    def remove_prefix(path)
+      if @prefix.size > 0
+        Pathname.new(path).relative_path_from(Pathname.new(@prefix)).to_s
+      else
+        path
       end
     end
 
     def file_index
       @file_index ||= Hash.new.tap do |index|
-        deep_tree(commit.tree.id).contents.each do |content|
+        @git_tree.contents.each do |content|
           index[content.name] = content.id
         end
       end
-    end
-
-    def deep_tree(tree_id)
-      output = grit_repo.git.native(:ls_tree, { r: true }, tree_id)
-      ::Grit::Tree.allocate.construct_initialize(grit_repo, tree_id, output)
-    end
-
-    def commit
-      @commit ||= grit_repo.commit(commit_sha)
-    end
-
-    def grit_repo
-      @grit_repo ||= ::Grit::Repo.allocate.tap do |r|
-        r.path = "#{repo_id}.git"
-        r.git = SmokeClient.new(@uri)
-      end
-    end
-
-    def repo_id
-      @repo_id ||= uri_parts[1]
-    end
-
-    def commit_sha
-      @commit_sha ||= uri_parts[2]
-    end
-
-    def uri_parts
-      @uri_parts ||= @uri.path.sub(/^\//, "").split("/")
     end
 
     class SmokeClient
