@@ -15,7 +15,7 @@ class Rails3Tests < Test::Unit::TestCase
       :controller => 1,
       :model => 8,
       :template => 36,
-      :warning => 54
+      :warning => 53
     }
 
     if RUBY_PLATFORM == 'java'
@@ -674,6 +674,24 @@ class Rails3Tests < Test::Unit::TestCase
       :file => /home_controller\.rb/
   end
 
+  def test_mass_assignment_with_slice
+    assert_no_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 141,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
+  def test_mass_assignment_with_only
+    assert_no_warning :type => :warning,
+      :warning_type => "Mass Assignment",
+      :line => 142,
+      :message => /^Unprotected\ mass\ assignment/,
+      :confidence => 0,
+      :file => /home_controller\.rb/
+  end
+
   def test_translate_bug
     assert_warning :type => :warning,
       :warning_type => "Cross Site Scripting",
@@ -950,7 +968,7 @@ class Rails3Tests < Test::Unit::TestCase
   end
 
   def test_session_secret_token
-    assert_warning :type => :warning,
+    assert_no_warning :type => :warning,
       :warning_type => "Session Setting",
       :line => 7,
       :message => /^Session\ secret\ should\ not\ be\ included\ in/,

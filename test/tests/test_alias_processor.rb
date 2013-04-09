@@ -202,9 +202,33 @@ class AliasProcessorTests < Test::Unit::TestCase
     RUBY
   end
 
+  def test_assignments_inside_branch_are_isolated
+    assert_alias "5", <<-RUBY
+    x = 1
+    if something
+      x = 2
+      x = 3
+    else
+      x = 4
+      x = 5
+      y = x
+    end
+
+    y
+    RUBY
+  end
+
+  def test_simple_if_branch_replacement
+    assert_alias "1", <<-RUBY
+    x = 1
+
+    y = true ? x : z
+    y
+    RUBY
+  end
+
   def test_simple_or_operation_compaction
-    #Could be better, but better than it was
-    assert_alias "[0, ((1 || 2) || 3 || 4), (4 || 8)]", <<-RUBY
+    assert_alias "[0, ((1 || 2) || 3), (4 || 8)]", <<-RUBY
     x = 1
 
     if z
@@ -235,6 +259,43 @@ class AliasProcessorTests < Test::Unit::TestCase
     assert_alias "1", <<-RUBY
     x = (true ? 1 : 2)
     x
+    RUBY
+  end
+
+  def test_simple_block_args
+    assert_alias '1', <<-RUBY
+    y = 1
+
+    x do |y|
+      y = 2
+    end
+
+    y
+    RUBY
+  end
+
+  def test_block_arg_assignment
+    assert_alias '1 + z', <<-RUBY
+    y = 1
+
+    blah do |y = 3, x = 2|
+      y = 2
+      z = x
+    end
+
+    y + z
+    RUBY
+  end
+
+  def test_block_arg_destructing
+    assert_alias '1', <<-RUBY
+    y = 1
+
+    blah do |(x, y)|
+      y = 2
+    end
+
+    y
     RUBY
   end
 end
