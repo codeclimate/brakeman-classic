@@ -21,4 +21,5 @@ Gem::Specification.new do |s|
   s.add_dependency "multi_json", "~>1.2"
   s.add_dependency "bertrpc"
   s.add_dependency "grit"
+  s.add_dependency "activesupport"
 end
