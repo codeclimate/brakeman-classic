@@ -278,6 +278,12 @@ module Brakeman
       end
     end
 
+    if $statsd
+      require 'brakeman/smoke_app_tree'
+      instrumentation = Brakeman::SmokeAppTree::SmokeInstrumentation
+      $statsd.timing "worker.brakeman.smoke.total_time", instrumentation.runtime
+      $statsd.gauge "worker.brakeman.smoke.total_call_count", instrumentation.call_count
+    end
     tracker
   end
 
