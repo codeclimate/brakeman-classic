@@ -283,6 +283,8 @@ module Brakeman
       instrumentation = Brakeman::SmokeAppTree::SmokeInstrumentation
       $statsd.timing "worker.brakeman.smoke.total_time", instrumentation.runtime
       $statsd.gauge "worker.brakeman.smoke.total_call_count", instrumentation.call_count
+      notify "Total Smoke Time: #{(instrumentation.runtime / 1000.0)} seconds"
+      notify "Total Smoke Call Count: #{instrumentation.call_count}"
     end
     tracker
   end
