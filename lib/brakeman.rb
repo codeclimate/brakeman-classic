@@ -64,8 +64,6 @@ module Brakeman
       options = { :app_path => options }
     end
 
-    options[:app_path] = File.expand_path(options[:app_path])
-
     file_options = load_options(options[:config_file])
 
     options = file_options.merge options
