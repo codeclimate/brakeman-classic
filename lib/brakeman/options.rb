@@ -181,6 +181,13 @@ module Brakeman::Options
           options[:relative_paths] = true
         end
 
+        opts.on "--statsd-url STATSD_URL", "URL to use for statsd if set" do |statsd_url|
+          require 'uri'
+          uri = URI.parse(statsd_url)
+          require "statsd"
+          $statsd = Statsd.new(uri.host, uri.port)
+        end
+
         opts.on "-w",
           "--confidence-level LEVEL",
           ["1", "2", "3"],
