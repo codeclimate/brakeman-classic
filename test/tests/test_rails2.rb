@@ -1216,13 +1216,13 @@ class Rails2WithOptionsTests < Test::Unit::TestCase
         :controller => 1,
         :model => 4,
         :template => 44,
-        :warning => 45 }
+        :warning => 46 }
     else
       @expected ||= {
         :controller => 1,
         :model => 4,
         :template => 44,
-        :warning => 46 }
+        :warning => 47 }
     end
   end
 
