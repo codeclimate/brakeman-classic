@@ -42,6 +42,12 @@ unless options[:app_path]
   end
 end
 
+if options[:app_path] =~ /^bertrpc:\/\//
+  options[:bertrpc] = true
+else
+  options[:bertrpc] = false
+end
+
 trap("INT") do
   $stderr.puts "\nInterrupted - exiting."
 
