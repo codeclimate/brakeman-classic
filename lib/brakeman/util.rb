@@ -274,7 +274,9 @@ module Brakeman::Util
     end
 
     if warning.file
-      warning.file
+      File.expand_path warning.file, tracker.options[:app_path]
+    elsif warning.template.is_a? Hash and warning.template[:file]
+      warning.template[:file]
     else
       case warning.warning_set
       when :controller

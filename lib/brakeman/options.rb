@@ -98,6 +98,11 @@ module Brakeman::Options
           options[:skip_files].merge files
         end
 
+        opts.on "--only-files file1,file2,etc", Array, "Process only these files" do |files|
+          options[:only_files] ||= Set.new
+          options[:only_files].merge files
+        end
+
         opts.on "--skip-libs", "Skip processing lib directory" do
           options[:skip_libs] = true
         end
@@ -177,8 +182,8 @@ module Brakeman::Options
           options[:summary_only] = true
         end
 
-        opts.on "--relative-paths", "Output relative file paths in reports" do
-          options[:relative_paths] = true
+        opts.on "--absolute-paths", "Output absolute file paths in reports" do
+          options[:absolute_paths] = true
         end
 
         opts.on "--statsd-url STATSD_URL", "URL to use for statsd if set" do |statsd_url|

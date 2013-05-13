@@ -5,25 +5,28 @@ module Brakeman
     attr_reader :root
 
     def self.from_options(options)
-      # Convert files into Regexp for matching
-      if options[:skip_files]
-        skip_files = "(?:" << options[:skip_files].map { |f| Regexp.escape f }.join("|") << ")$"
-        skip_files = Regexp.new(skip_files)
-      else
-        skip_files = nil
-      end
+      root = options[:app_path]
 
-      root = if options[:app_path] =~ /^bertrpc:\/\//
+      # Convert files into Regexp for matching
+      init_options = {}
+      if options[:skip_files]
+        init_options[:skip_files] = Regexp.new("(?:" << options[:skip_files].map { |f| Regexp.escape f }.join("|") << ")$")
+      end
+      if options[:only_files]
+        init_options[:only_files] = Regexp.new("(?:" << options[:only_files].map { |f| Regexp.escape f }.join("|") << ")")
+      end
+      if root =~ /^bertrpc:\/\//
         require "brakeman/smoke_app_tree"
-        SmokeAppTree.new(options[:app_path], skip_files)
+        SmokeAppTree.new(root, init_options[:skip_files])
       else
-        new(File.expand_path(options[:app_path]), skip_files)
+        new(root, init_options)
       end
     end
 
-    def initialize(root, skip_files = nil)
+    def initialize(root, init_options = {})
       @root = root
-      @skip_files = skip_files
+      @skip_files = init_options[:skip_files]
+      @only_files = init_options[:only_files]
     end
 
     def valid?
@@ -85,14 +88,22 @@ module Brakeman
     def find_paths(directory, extensions = "*.rb")
       pattern = @root + "/#{directory}/**/#{extensions}"
 
-      Dir.glob(pattern).sort.tap do |paths|
-        reject_skipped_files(paths)
-      end
+      select_files(Dir.glob(pattern).sort)
+    end
+
+    def select_files(paths)
+      paths = select_only_files(paths)
+      reject_skipped_files(paths)
+    end
+
+    def select_only_files(paths)
+      return paths unless @only_files
+      paths.select { |f| @only_files.match f }
     end
 
     def reject_skipped_files(paths)
-      return unless @skip_files
-      paths.reject! { |f| @skip_files.match f }
+      return paths unless @skip_files
+      paths.reject { |f| @skip_files.match f }
     end
 
   end

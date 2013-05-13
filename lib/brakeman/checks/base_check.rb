@@ -12,6 +12,14 @@ class Brakeman::BaseCheck < Brakeman::SexpProcessor
   CONFIDENCE = { :high => 0, :med => 1, :low => 2 }
 
   Match = Struct.new(:type, :match)
+  
+  class << self
+    attr_accessor :name
+  
+    def inherited(subclass)
+      subclass.name = subclass.to_s.match(/^Brakeman::(.*)$/)[1]
+    end
+  end
 
   #Initialize Check with Checks.
   def initialize(app_tree, tracker)
@@ -116,9 +124,11 @@ class Brakeman::BaseCheck < Brakeman::SexpProcessor
 
   #Report a warning
   def warn options
-    extra_opts = { :check => self.class.to_s, :relative_file => relative_path(options[:file]) }
+    extra_opts = { :check => self.class.to_s }
+
     warning = Brakeman::Warning.new(options.merge(extra_opts))
     warning.file = file_for warning
+    warning.relative_path = relative_path(warning.file)
 
     @warnings << warning
   end
@@ -163,7 +173,6 @@ class Brakeman::BaseCheck < Brakeman::SexpProcessor
     @mass_assign_disabled = false
 
     if version_between?("3.1.0", "3.9.9") and
-      tracker.config[:rails] and
       tracker.config[:rails][:active_record] and
       tracker.config[:rails][:active_record][:whitelist_attributes] == Sexp.new(:true)
 
@@ -506,5 +515,24 @@ class Brakeman::BaseCheck < Brakeman::SexpProcessor
     end
 
     @active_record_models
+  end
+
+  def friendly_type_of input_type
+    if input_type.is_a? Match
+      input_type = input_type.type
+    end
+
+    case input_type
+    when :params
+      "parameter value"
+    when :cookies
+      "cookie value"
+    when :request
+      "request value"
+    when :model
+      "model attribute"
+    else
+      "user input"
+    end
   end
 end
