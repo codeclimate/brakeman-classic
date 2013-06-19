@@ -275,6 +275,8 @@ module Brakeman::Util
 
     if warning.file
       warning.file
+    elsif warning.template.is_a? Hash and warning.template[:file]
+      warning.template[:file]
     else
       case warning.warning_set
       when :controller
@@ -305,7 +307,7 @@ module Brakeman::Util
     unless type
       if string_name =~ /Controller$/
         type = :controller
-      elsif camelize(string_name) == string_name
+      elsif camelize(string_name) == string_name # This is not always true
         type = :model
       else
         type = :template
@@ -325,7 +327,7 @@ module Brakeman::Util
       if tracker.models[name] and tracker.models[name][:file]
         path = tracker.models[name][:file]
       else
-        path += "/app/controllers/#{underscore(string_name)}.rb"
+        path += "/app/models/#{underscore(string_name)}.rb"
       end
     when :template
       if tracker.templates[name] and tracker.templates[name][:file]
@@ -384,7 +386,7 @@ module Brakeman::Util
 
   def truncate_table str
     @terminal_width ||= if $stdin && $stdin.tty?
-                          ::HighLine::SystemExtensions::terminal_size[0]
+                          ::HighLine.new.terminal_size[0]
                         else
                           80
                         end

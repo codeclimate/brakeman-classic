@@ -68,14 +68,9 @@ module BrakemanTester::FindWarning
       warnings.select block
     else
       warnings.select do |w|
-        flag = true
-        opts.each do |k,v|
-          unless v === w.send(k)
-            flag = false
-            break
-          end
+        opts.all? do |k,v|
+          v === w.send(k)
         end
-        flag
       end
     end
 
@@ -196,7 +191,7 @@ module BrakemanTester::RescanTestHelper
     output = yield parsed
 
     File.open path, "w" do |f|
-      f.puts Ruby2Ruby.new.process output
+      f.puts Brakeman::OutputProcessor.new.process output
     end
   end
 

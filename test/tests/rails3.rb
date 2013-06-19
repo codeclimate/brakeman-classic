@@ -14,8 +14,8 @@ class Rails3Tests < Test::Unit::TestCase
     @expected ||= {
       :controller => 1,
       :model => 8,
-      :template => 36,
-      :warning => 53
+      :template => 38,
+      :warning => 54
     }
 
     if RUBY_PLATFORM == 'java'
@@ -35,6 +35,8 @@ class Rails3Tests < Test::Unit::TestCase
 
   def test_eval_params
     assert_warning :type => :warning,
+      :warning_code => 13,
+      :fingerprint => "4efdd73fb759135f5980b5da1d9804aa4eb5c7475eabfd0f0cf41299d1d7ec42",
       :warning_type => "Dangerous Eval",
       :line => 40,
       :message => /^User input in eval near line 40: eval\(pa/,
@@ -53,6 +55,8 @@ class Rails3Tests < Test::Unit::TestCase
 
   def test_command_injection_params_interpolation
     assert_warning :type => :warning,
+      :warning_code => 14,
+      :fingerprint => "eb5287a6638bce4be342627db12d03f1e5b51175ed13549920921e3659c21df4",
       :warning_type => "Command Injection",
       :line => 34,
       :message => /^Possible command injection near line 34:/,
@@ -137,7 +141,7 @@ class Rails3Tests < Test::Unit::TestCase
       :warning_type => "Mass Assignment",
       :line => 43,
       :message => /^Unprotected mass assignment near line 43: Product.new/,
-      :confidence => 2,
+      :confidence => 1,
       :file => /products_controller\.rb/
   end
 
@@ -146,7 +150,7 @@ class Rails3Tests < Test::Unit::TestCase
       :warning_type => "Mass Assignment",
       :line => 62,
       :message => /^Unprotected mass assignment near line 62: Product.find/,
-      :confidence => 2,
+      :confidence => 1,
       :file => /products_controller\.rb/
   end
 
@@ -240,7 +244,7 @@ class Rails3Tests < Test::Unit::TestCase
   def test_sql_injection_CVE_2012_5664
     assert_warning :type => :warning,
       :warning_type => "SQL Injection",
-      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.18,\ 3\.1/,
+      :message => /CVE-2012-5664/,
       :confidence => 0,
       :file => /Gemfile/
   end
@@ -557,6 +561,16 @@ class Rails3Tests < Test::Unit::TestCase
       :file => /user\.rb/
   end
 
+  def test_sqli_in_unusual_model_name
+    assert_warning :type => :warning,
+      :warning_code => 0,
+      :warning_type => "SQL Injection",
+      :line => 3,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :file => /underline_model\.rb/
+  end
+
   def test_escape_once
     results = find :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -824,6 +838,27 @@ class Rails3Tests < Test::Unit::TestCase
       :file => /test_params\.html\.erb/
   end
 
+  def test_cross_site_scripting_in_nested_controller
+    assert_warning :type => :template,
+      :warning_code => 2,
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 0,
+      :file => /so_nested\.html\.erb/
+  end
+
+  def test_cross_site_scripting_from_parent
+    assert_warning :type => :template,
+      :warning_code => 2,
+      :fingerprint => "1e860da2c9a0cac3d898f3c4327877b3bdfa391048a19bfd6f55d6e283cc5b33",
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 0,
+      :relative_path => "app/views/child/action_in_child.html.erb"
+  end
+
   def test_cross_site_scripting_select_tag_CVE_2012_3463
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -859,6 +894,8 @@ class Rails3Tests < Test::Unit::TestCase
 
   def test_mail_link_CVE_2011_0446
     assert_warning :type => :template,
+      :warning_code => 32,
+      :fingerprint => "ca5cb14e201255ecf4904957bba2e12eab64ea2d31c26d7150a431dcdae2f206",
       :warning_type => "Mail Link",
       :line => 1,
       :message => /^Vulnerability\ in\ mail_to\ using\ javascrip/,
@@ -869,7 +906,7 @@ class Rails3Tests < Test::Unit::TestCase
   def test_sql_injection_CVE_2013_0155
     assert_warning :type => :warning,
       :warning_type => "SQL Injection",
-      :message => /^All\ versions\ of\ Rails\ before\ 3\.0\.19,\ 3\.1/,
+      :message => /CVE-2013-0155/,
       :confidence => 0,
       :file => /Gemfile/
   end
@@ -900,6 +937,7 @@ class Rails3Tests < Test::Unit::TestCase
 
   def test_remote_code_execution_CVE_2013_0277_unprotected
     assert_warning :type => :model,
+      :fingerprint => "b85602475eb048cfe7941b5952c3d5a09a7d9d0607f81fbf2b7578d1055fec90",
       :warning_type => "Remote Code Execution",
       :message => /^Serialized\ attributes\ are\ vulnerable\ in\ /,
       :confidence => 0,
@@ -998,7 +1036,7 @@ class Rails3Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "Remote Code Execution",
       :line => 125,
-      :message => /^YAML\.load\ called\ with\ cookies\ value/,
+      :message => /^YAML\.load\ called\ with\ cookie\ value/,
       :confidence => 1,
       :file => /home_controller\.rb/
   end
@@ -1026,7 +1064,7 @@ class Rails3Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "Remote Code Execution",
       :line => 131,
-      :message => /^YAML\.load_stream\ called\ with\ cookies\ val/,
+      :message => /^YAML\.load_stream\ called\ with\ cookie\ value/,
       :confidence => 0,
       :file => /home_controller\.rb/
   end

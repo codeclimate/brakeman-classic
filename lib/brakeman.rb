@@ -41,7 +41,7 @@ module Brakeman
   #  * :skip_libs - do not process lib/ directory (default: false)
   #  * :skip_templates - do not process app/views/ directory (default: false)
   #  * :skip_checks - checks not to run (run all if not specified)
-  #  * :relative_path - show relative path of each file(default: false)
+  #  * :absolute_paths - show absolute path of each file (default: false)
   #  * :summary_only - only output summary section of report
   #                    (does not apply to tabs format)
   #
@@ -64,13 +64,18 @@ module Brakeman
       options = { :app_path => options }
     end
 
-    file_options = load_options(options[:config_file])
+    if options[:quiet] == :command_line
+      command_line = true
+      options.delete :quiet
+    end
 
-    options = file_options.merge options
+    options = default_options.merge(load_options(options[:config_file], options[:quiet])).merge(options)
 
-    options[:quiet] = true if options[:quiet].nil? && file_options[:quiet]
+    if options[:quiet].nil? and not command_line
+      options[:quiet] = true
+    end
 
-    options = get_defaults.merge! options
+    options[:app_path] = File.expand_path(options[:app_path])
     options[:output_formats] = get_output_formats options
 
     options
@@ -83,12 +88,14 @@ module Brakeman
   ]
 
   #Load options from YAML file
-  def self.load_options custom_location
+  def self.load_options custom_location, quiet
     #Load configuration file
     if config = config_file(custom_location)
       options = YAML.load_file config
       options.each { |k, v| options[k] = Set.new v if v.is_a? Array }
-      notify "[Notice] Using configuration in #{config}" unless options[:quiet]
+
+      # notify if options[:quiet] and quiet is nil||false
+      notify "[Notice] Using configuration in #{config}" unless (options[:quiet] || quiet)
       options
     else
       {}
@@ -101,7 +108,7 @@ module Brakeman
   end
 
   #Default set of options
-  def self.get_defaults
+  def self.default_options
     { :assume_all_routes => true,
       :skip_checks => Set.new,
       :check_arguments => true,
@@ -115,7 +122,6 @@ module Brakeman
       :message_limit => 100,
       :parallel_checks => true,
       :relative_path => false,
-      :quiet => true,
       :report_progress => true,
       :html_style => "#{File.expand_path(File.dirname(__FILE__))}/brakeman/format/style.css"
     }
@@ -129,61 +135,80 @@ module Brakeman
       raise ArgumentError, "Cannot specify output format if multiple output files specified"
     end
     if options[:output_format]
-      [
-        case options[:output_format]
-        when :html, :to_html
-          :to_html
-        when :csv, :to_csv
-          :to_csv
-        when :pdf, :to_pdf
-          :to_pdf
-        when :tabs, :to_tabs
-          :to_tabs
-        when :json, :to_json
-          :to_json
-        else
-          :to_s
-        end
-      ]
+      get_formats_from_output_format options[:output_format]
+    elsif options[:output_files]
+      get_formats_from_output_files options[:output_files]
     else
-      return [:to_s] unless options[:output_files]
-      options[:output_files].map do |output_file|
-        case output_file
-        when /\.html$/i
-          :to_html
-        when /\.csv$/i
-          :to_csv
-        when /\.pdf$/i
-          :to_pdf
-        when /\.tabs$/i
-          :to_tabs
-        when /\.json$/i
-          :to_json
-        else
-          :to_s
-        end
+      return [:to_s]
+    end
+  end
+
+  def self.get_formats_from_output_format output_format
+    case output_format
+    when :html, :to_html
+      [:to_html]
+    when :csv, :to_csv
+      [:to_csv]
+    when :pdf, :to_pdf
+      [:to_pdf]
+    when :tabs, :to_tabs
+      [:to_tabs]
+    when :json, :to_json
+      [:to_json]
+    else
+      [:to_s]
+    end
+  end
+  private_class_method :get_formats_from_output_format
+
+  def self.get_formats_from_output_files output_files
+    output_files.map do |output_file|
+      case output_file
+      when /\.html$/i
+        :to_html
+      when /\.csv$/i
+        :to_csv
+      when /\.pdf$/i
+        :to_pdf
+      when /\.tabs$/i
+        :to_tabs
+      when /\.json$/i
+        :to_json
+      else
+        :to_s
       end
     end
   end
+  private_class_method :get_formats_from_output_files
 
   #Output list of checks (for `-k` option)
   def self.list_checks
     require 'brakeman/scanner'
+    format_length = 30
+
     $stderr.puts "Available Checks:"
-    $stderr.puts "-" * 30
-    $stderr.puts Checks.checks.map { |c|
-      c.to_s.match(/^Brakeman::(.*)$/)[1].ljust(27) << c.description
-    }.sort.join "\n"
+    $stderr.puts "-" * format_length
+    Checks.checks.each do |check|
+      $stderr.printf("%-#{format_length}s%s\n", check.name, check.description)
+    end
   end
 
   #Installs Rake task for running Brakeman,
   #which basically means copying `lib/brakeman/brakeman.rake` to
   #`lib/tasks/brakeman.rake` in the current Rails application.
-  def self.install_rake_task
-    if not File.exists? "Rakefile"
-      abort "No Rakefile detected"
-    elsif File.exists? "lib/tasks/brakeman.rake"
-      abort "Task already exists"
+  def self.install_rake_task install_path = nil
+    if install_path
+      rake_path = File.join(install_path, "Rakefile")
+      task_path = File.join(install_path, "lib", "tasks", "brakeman.rake")
+    else
+      rake_path = "Rakefile"
+      task_path = File.join("lib", "tasks", "brakeman.rake")
+    end
+
+    if not File.exists? rake_path
+      raise RakeInstallError, "No Rakefile detected"
+    elsif File.exists? task_path
+      raise RakeInstallError, "Task already exists"
     end
 
     require 'fileutils'
@@ -195,13 +220,13 @@ module Brakeman
 
     path = File.expand_path(File.dirname(__FILE__))
 
-    FileUtils.cp "#{path}/brakeman/brakeman.rake", "lib/tasks/brakeman.rake"
+    FileUtils.cp "#{path}/brakeman/brakeman.rake", task_path
 
-    if File.exists? "lib/tasks/brakeman.rake"
-      notify "Task created in lib/tasks/brakeman.rake"
+    if File.exists? task_path
+      notify "Task created in #{task_path}"
       notify "Usage: rake brakeman:run[output_file]"
     else
-      notify "Could not create task"
+      raise RakeInstallError, "Could not create task"
     end
   end
 
@@ -240,7 +265,7 @@ module Brakeman
     begin
       require 'brakeman/scanner'
     rescue LoadError
-      abort "Cannot find lib/ directory."
+      raise NoBrakemanError, "Cannot find lib/ directory."
     end
 
     #Start scanning
@@ -259,18 +284,11 @@ module Brakeman
     if options[:output_files]
       notify "Generating report..."
 
-      options[:output_files].each_with_index do |output_file, idx|
-        File.open output_file, "w" do |f|
-          f.write tracker.report.send(options[:output_formats][idx])
-        end
-        notify "Report saved in '#{output_file}'"
-      end
+      write_report_to_files tracker, options[:output_files]
     elsif options[:print_report]
       notify "Generating report..."
 
-      options[:output_formats].each do |output_format|
-        puts tracker.report.send(output_format)
-      end
+      write_report_to_formats tracker, options[:output_formats]
     end
 
     if $statsd
@@ -283,6 +301,23 @@ module Brakeman
     end
     tracker
   end
+
+  def self.write_report_to_files tracker, output_files
+    output_files.each_with_index do |output_file, idx|
+      File.open output_file, "w" do |f|
+        f.write tracker.report.format(output_file)
+      end
+      notify "Report saved in '#{output_file}'"
+    end
+  end
+  private_class_method :write_report_to_files
+
+  def self.write_report_to_formats tracker, output_formats
+    output_formats.each do |output_format|
+      puts tracker.report.format(output_format)
+    end
+  end
+  private_class_method :write_report_to_formats
 
   #Rescan a subset of files in a Rails application.
   #
@@ -333,4 +368,7 @@ module Brakeman
 
     Brakeman::Differ.new(new_results, previous_results).diff
   end
+
+  class RakeInstallError < RuntimeError; end
+  class NoBrakemanError < RuntimeError; end
 end
