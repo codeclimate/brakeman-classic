@@ -274,7 +274,11 @@ module Brakeman::Util
     end
 
     if warning.file
-      warning.file
+      if tracker.options[:bertrpc]
+        warning.file
+      else
+        File.expand_path warning.file, tracker.options[:app_path]
+      end
     elsif warning.template.is_a? Hash and warning.template[:file]
       warning.template[:file]
     else
