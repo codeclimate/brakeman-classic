@@ -18,7 +18,7 @@ module Brakeman
         init_options[:only_files] = Regexp.new("(?:" << options[:only_files].map { |f| Regexp.escape f }.join("|") << ")")
       end
 
-      if root =~ /^bertrpc:\/\//
+      if options[:bertrpc]
         require "brakeman/smoke_app_tree"
         SmokeAppTree.new(root, init_options[:skip_files])
       else

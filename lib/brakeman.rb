@@ -75,7 +75,7 @@ module Brakeman
       options[:quiet] = true
     end
 
-    options[:app_path] = File.expand_path(options[:app_path])
+    options[:app_path] = File.expand_path(options[:app_path]) unless options[:bertrpc]
     options[:output_formats] = get_output_formats options
 
     options
