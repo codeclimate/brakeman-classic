@@ -109,9 +109,7 @@ module Brakeman
       all_paths = glob("#{directory}/**/#{extensions}") +
         glob("#{directory}/#{extensions}")
 
-      all_paths.sort.uniq.tap do |paths|
-        reject_skipped_files(paths)
-      end
+      reject_skipped_files(all_paths.sort.uniq)
     end
 
     def glob(pattern)

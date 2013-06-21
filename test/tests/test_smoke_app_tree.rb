@@ -30,6 +30,17 @@ class SmokeAppTreeTest < Test::Unit::TestCase
     assert_equal ["app/models/project.rb", "app/models/user.rb"], @app_tree.model_paths
   end
 
+  def test_excluding_files
+    app_tree = Brakeman::SmokeAppTree.new("", /app\/models\/us.*/)
+    app_tree.git_tree = @git_tree
+
+    @git_tree.expect :contents, [
+      OpenStruct.new(name: "app/models/user.rb", id: "123"),
+      OpenStruct.new(name: "app/models/project.rb", id: "def")
+    ]
+    assert_equal ["app/models/project.rb"], app_tree.model_paths
+  end
+
   def test_prefix
     url = "bertrc://example.com/smoke/repo_id/commit_sha/myapp"
     @app_tree = Brakeman::SmokeAppTree.new(url, nil)
