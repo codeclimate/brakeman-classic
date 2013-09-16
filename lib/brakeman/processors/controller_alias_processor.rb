@@ -11,10 +11,9 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
   #other methods will be skipped.
   #This is for rescanning just a single action.
   def initialize app_tree, tracker, only_method = nil
-    super()
+    super tracker
     @app_tree = app_tree
     @only_method = only_method
-    @tracker = tracker
     @rendered = false
     @current_class = @current_module = @current_method = nil
     @method_cache = {} #Cache method lookups
@@ -49,7 +48,7 @@ class Brakeman::ControllerAliasProcessor < Brakeman::AliasProcessor
         #Need to process the method like it was in a controller in order
         #to get the renders set
         processor = Brakeman::ControllerProcessor.new(@app_tree, @tracker)
-        method = mixin[:public][name]
+        method = mixin[:public][name].deep_clone
 
         if node_type? method, :methdef
           method = processor.process_defn method

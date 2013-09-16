@@ -390,6 +390,7 @@ module Brakeman::Util
 
   def truncate_table str
     @terminal_width ||= if $stdin && $stdin.tty?
+                          Brakeman.load_brakeman_dependency 'highline'
                           ::HighLine.new.terminal_size[0]
                         else
                           80
@@ -407,6 +408,7 @@ module Brakeman::Util
 
   # rely on Terminal::Table to build the structure, extract the data out in CSV format
   def table_to_csv table
+    Brakeman.load_brakeman_dependency 'terminal-table'
     output = CSV.generate_line(table.headings.cells.map{|cell| cell.to_s.strip})
     table.rows.each do |row|
       output << CSV.generate_line(row.cells.map{|cell| cell.to_s.strip})

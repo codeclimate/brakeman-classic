@@ -13,9 +13,9 @@ class Rails31Tests < Test::Unit::TestCase
   def expected
     @expected ||= {
       :model => 3,
-      :template => 22,
+      :template => 23,
       :controller => 4,
-      :warning => 71 }
+      :generic => 72 }
   end
 
   def test_without_protection
@@ -111,10 +111,21 @@ class Rails31Tests < Test::Unit::TestCase
   def test_basic_auth_with_password
     assert_warning :type => :controller,
       :warning_type => "Basic Auth",
-      :line => 6,
+      :line => 4,
       :message => /^Basic authentication password stored in source code/,
       :confidence => 0,
       :file => /users_controller\.rb/
+  end
+
+  def test_basic_auth_in_method_with_password
+    assert_warning :type => :warning,
+      :warning_code => 9,
+      :fingerprint => "f2698a4ca148f43a8f77901a57371b6253f450d50ad388de588f32b7dbeb8937",
+      :warning_type => "Basic Auth",
+      :line => 25,
+      :message => /^Basic\ authentication\ password\ stored\ in\ /,
+      :confidence => 0,
+      :relative_path => "app/controllers/admin_controller.rb"
   end
 
   def test_translate_bug
@@ -806,6 +817,17 @@ class Rails31Tests < Test::Unit::TestCase
       :file => /json_test\.html\.erb/
   end
 
+  def test_cross_site_scripting_in_haml_interp
+    assert_no_warning :type => :template,
+      :warning_code => 5,
+      :fingerprint => "56acfae7db5bda36a971702c819899043e7f62c8623223f353a1ade876454712",
+      :warning_type => "Cross Site Scripting",
+      :line => 2,
+      :message => /^Unescaped\ parameter\ value/,
+      :confidence => 2,
+      :relative_path => "app/views/users/interpolated_value.html.haml"
+  end
+
   def test_arel_table_in_sql
     assert_no_warning :type => :warning,
       :warning_type => "SQL Injection",
@@ -1010,5 +1032,37 @@ class Rails31Tests < Test::Unit::TestCase
       :message => /^Marshal\.restore\ called\ with\ model\ attrib/,
       :confidence => 1,
       :relative_path => "app/controllers/other_controller.rb"
+  end
+
+  def test_attr_accessible_with_role
+    assert_no_warning :type => :model,
+      :warning_code => 17,
+      :fingerprint => "77c353ad8e5fc9880775ed436bbfa37b005b43aa2978186de92b6916f46fac39",
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ admin\ av/,
+      :confidence => 0,
+      :relative_path => "app/models/user.rb"
+  end
+
+  def test_wrong_model_attributes_in_haml
+    assert_no_warning :type => :template,
+      :warning_code => 2,
+      :fingerprint => "8851713f0af477e60090607b814ba68055e4ac1cf19df0628fddd961ff87e763",
+      :warning_type => "Cross Site Scripting",
+      :line => 3,
+      :message => /^Unescaped\ model\ attribute/,
+      :confidence => 0,
+      :relative_path => "app/views/other/test_model_in_haml.html.haml"
+  end
+
+  def test_right_model_attribute_in_haml
+    assert_warning :type => :template,
+      :warning_code => 2,
+      :fingerprint => "3310ef4a4bde8b120fd5d421565ee416af815404e7c116a8069052e8732589d0",
+      :warning_type => "Cross Site Scripting",
+      :line => 7,
+      :message => /^Unescaped\ model\ attribute/,
+      :confidence => 0,
+      :relative_path => "app/views/other/test_model_in_haml.html.haml"
   end
 end

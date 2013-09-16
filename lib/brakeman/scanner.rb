@@ -1,19 +1,11 @@
 require 'rubygems'
+
 begin
   require 'ruby_parser'
   require 'ruby_parser/bm_sexp.rb'
   require 'ruby_parser/bm_sexp_processor.rb'
-
-  require 'haml'
-  require 'sass'
-  require 'erb'
-  require 'erubis'
-  require 'slim'
   require 'brakeman/processor'
   require 'brakeman/app_tree'
-  require 'brakeman/parsers/rails2_erubis'
-  require 'brakeman/parsers/rails2_xss_plugin_erubis'
-  require 'brakeman/parsers/rails3_erubis'
 rescue LoadError => e
   $stderr.puts e.message
   $stderr.puts "Please install the appropriate dependency."
@@ -33,7 +25,7 @@ class Brakeman::Scanner
     @app_tree = Brakeman::AppTree.from_options(options)
 
     if !@app_tree.valid?
-      raise NoApplication, "Please supply the path to a Rails application."
+      raise Brakeman::NoApplication, "Please supply the path to a Rails application."
     end
 
     if @app_tree.exists?("script/rails")
@@ -277,24 +269,33 @@ class Brakeman::Scanner
         if tracker.config[:escape_html]
           type = :erubis
           if options[:rails3]
+            require 'brakeman/parsers/rails3_erubis'
             src = Brakeman::Rails3Erubis.new(text).src
           else
+            require 'brakeman/parsers/rails2_xss_plugin_erubis'
             src = Brakeman::Rails2XSSPluginErubis.new(text).src
           end
         elsif tracker.config[:erubis]
+          require 'brakeman/parsers/rails2_erubis'
           type = :erubis
           src = Brakeman::ScannerErubis.new(text).src
         else
+          require 'erb'
           src = ERB.new(text, nil, "-").src
           src.sub!(/^#.*\n/, '') if RUBY_1_9
         end
 
         parsed = parse_ruby src
       elsif type == :haml
+        Brakeman.load_brakeman_dependency 'haml'
+        Brakeman.load_brakeman_dependency 'sass'
+
         src = Haml::Engine.new(text,
                                :escape_html => !!tracker.config[:escape_html]).precompiled
         parsed = parse_ruby src
       elsif type == :slim
+        Brakeman.load_brakeman_dependency 'slim'
+
         src = Slim::Template.new(:disable_capture => true,
                                  :generator => Temple::Generators::RailsOutputBuffer) { text }.precompiled_template
 
@@ -360,6 +361,7 @@ class Brakeman::Scanner
   def parse_ruby input
     @ruby_parser.new.parse input
   end
-
-  class NoApplication < RuntimeError; end
 end
+
+# This is to allow operation without loading the Haml library
+module Haml; class Error < StandardError; end; end

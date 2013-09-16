@@ -1,3 +1,34 @@
+# 2.1.1
+
+ * New warning code for dangerous attributes in attr_accessible
+ * Do not warn on attr_accessible using roles
+ * More accurate results for model attribute warnings
+ * Use exit code zero with `-z` if all warnings ignored
+ * Respect ignored warnings in rescans
+ * Ignore dynamic controller names in routes
+ * Fix infinite loop when run as rake task (Matthew Shanley)
+ * Respect ignored warnings in tabs format reports
+
+# 2.1.0
+
+ * Support non-native line endings in Gemfile.lock (Paul Deardorff)
+ * Support for ignoring warnings
+ * Check for dangerous model attributes defined in attr_accessible (Paul Deardorff)
+ * Update to ruby_parser 3.2.2
+ * Add brakeman-min gemspec
+ * Load gem dependencies on-demand 
+ * Output JSON diff to file if -o option is used 
+ * Add check for authenticate_or_request_with_http_basic
+ * Refactor of SQL injection check code (Bart ten Brinke)
+ * Fix detection of duplicate XSS warnings
+ * Refactor reports into separate classes 
+ * Allow use of Slim 2.x (Ian Zabel) 
+ * Return error exit code when application path is not found
+ * Add `--branch-limit` option, limit to 5 by default
+ * Add more methods to check for command injection
+ * Fix output format detection to be more strict again
+ * Allow empty Brakeman configuration file
+
 # 2.0.0
   
  * Add `--only-files` option to specify files/paths to scan (Ian Ehlert)

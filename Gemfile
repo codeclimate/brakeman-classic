@@ -1,5 +1,6 @@
 source "https://rubygems.org"
 
-gemspec
+gemspec :name => "brakeman"
 
 gem "rake"
+gem "coveralls", :require => false

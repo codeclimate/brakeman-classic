@@ -10,6 +10,7 @@ module Brakeman
 
   @debug = false
   @quiet = false
+  @loaded_dependencies = []
 
   #Run Brakeman scan. Returns Tracker object.
   #
@@ -92,11 +93,16 @@ module Brakeman
     #Load configuration file
     if config = config_file(custom_location)
       options = YAML.load_file config
-      options.each { |k, v| options[k] = Set.new v if v.is_a? Array }
+      if options
+        options.each { |k, v| options[k] = Set.new v if v.is_a? Array }
 
-      # notify if options[:quiet] and quiet is nil||false
-      notify "[Notice] Using configuration in #{config}" unless (options[:quiet] || quiet)
-      options
+        # notify if options[:quiet] and quiet is nil||false
+        notify "[Notice] Using configuration in #{config}" unless (options[:quiet] || quiet)
+        options
+      else
+        notify "[Notice] Empty configuration file: #{config}" unless quiet
+        {}
+      end
     else
       {}
     end
@@ -139,7 +145,12 @@ module Brakeman
     elsif options[:output_files]
       get_formats_from_output_files options[:output_files]
     else
-      return [:to_s]
+      begin
+        require 'terminal-table'
+        return [:to_s]
+      rescue LoadError
+        return [:to_json]
+      end
     end
   end
 
@@ -279,7 +290,10 @@ module Brakeman
     else
       notify "Runnning checks..."
     end
+
     tracker.run_checks
+
+    self.filter_warnings tracker, options
 
     if options[:output_files]
       notify "Generating report..."
@@ -305,7 +319,7 @@ module Brakeman
   def self.write_report_to_files tracker, output_files
     output_files.each_with_index do |output_file, idx|
       File.open output_file, "w" do |f|
-        f.write tracker.report.format(output_file)
+        f.write tracker.report.format(tracker.options[:output_formats][idx])
       end
       notify "Report saved in '#{output_file}'"
     end
@@ -369,6 +383,48 @@ module Brakeman
     Brakeman::Differ.new(new_results, previous_results).diff
   end
 
+  def self.load_brakeman_dependency name
+    return if @loaded_dependencies.include? name
+
+    begin
+      require name
+    rescue LoadError => e
+      $stderr.puts e.message
+      $stderr.puts "Please install the appropriate dependency."
+      exit! -1
+    end
+  end
+
+  def self.filter_warnings tracker, options
+    require 'brakeman/report/ignore/config'
+
+    app_tree = Brakeman::AppTree.from_options(options)
+
+    if options[:ignore_file]
+      file = options[:ignore_file]
+    elsif app_tree.exists? "config/brakeman.ignore"
+      file = app_tree.expand_path("config/brakeman.ignore")
+    elsif not options[:interactive_ignore]
+      return
+    end
+
+    notify "Filtering warnings..."
+
+    if options[:interactive_ignore]
+      require 'brakeman/report/ignore/interactive'
+      config = InteractiveIgnorer.new(file, tracker.warnings).start
+    else
+      notify "[Notice] Using '#{file}' to filter warnings"
+      config = IgnoreConfig.new(file, tracker.warnings)
+      config.read_from_file
+      config.filter_ignored
+    end
+
+    tracker.ignored_filter = config
+  end
+
+  class DependencyError < RuntimeError; end
   class RakeInstallError < RuntimeError; end
   class NoBrakemanError < RuntimeError; end
+  class NoApplication < RuntimeError; end
 end

@@ -9,13 +9,13 @@ class Rails32Tests < Test::Unit::TestCase
   def expected
     @expected ||= {
       :controller => 0,
-      :model => 0,
+      :model => 5,
       :template => 11,
-      :warning => 7 }
+      :generic => 7 }
 
 
     if RUBY_PLATFORM == 'java'
-      @expected[:warning] += 1
+      @expected[:generic] += 1
     end
 
     @expected
@@ -212,4 +212,50 @@ class Rails32Tests < Test::Unit::TestCase
       :confidence => 0,
       :file => /secret_token\.rb/
   end
+
+  def test_model_attr_accessible_admin
+    assert_warning :type => :model,
+      :warning_code => 60,
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ admin/,
+      :confidence => 0, #HIGH
+      :file => /user\.rb/
+  end 
+
+  def test_model_attr_accessible_account_id
+    assert_warning :type => :model,
+      :warning_code => 60,
+      :fingerprint => "1d6615676c39afae6d749891e45d7351423542b3fe71a6eaf088bf7573e5c4b0",
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ account_/,
+      :confidence => 0,
+      :relative_path => "app/models/user.rb"
+  end 
+
+  def test_model_attr_accessible_account_banned
+    assert_warning :type => :model,
+      :warning_code => 60,
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ banned/,
+      :confidence => 1, #MED
+      :file => /account\.rb/
+  end 
+
+  def test_model_attr_accessible_status_id
+    assert_warning :type => :model,
+      :warning_code => 60,
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ status_id/,
+      :confidence => 2, #LOW
+      :file => /user\.rb/
+  end 
+
+  def test_model_attr_accessible_plan_id
+    assert_warning :type => :model,
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ plan_id/,
+      :confidence => 2, 
+      :file => /account\.rb/
+  end 
+
 end

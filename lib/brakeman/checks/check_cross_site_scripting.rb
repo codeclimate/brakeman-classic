@@ -94,7 +94,7 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
   end
 
   def check_for_immediate_xss exp
-    return if duplicate? exp
+    return :duplicate if duplicate? exp
 
     if exp.node_type == :output
       out = exp.value
@@ -122,9 +122,9 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
                end
 
       unless IGNORE_MODEL_METHODS.include? method
-        add_result out
+        add_result exp
 
-        if MODEL_METHODS.include? method or method.to_s =~ /^find_by/
+        if likely_model_attribute? match
           confidence = CONFIDENCE[:high]
         else
           confidence = CONFIDENCE[:med]
@@ -140,18 +140,36 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
           warning_code = :xss_to_json
         end
 
-        code = find_chain out, match
+        code = if match == out
+                 nil
+               else
+                 match
+               end
+
         warn :template => @current_template,
           :warning_type => "Cross Site Scripting",
           :warning_code => warning_code,
           :message => message,
-          :code => code,
+          :code => match,
           :confidence => confidence,
           :link_path => link_path
       end
 
     else
       false
+    end
+  end
+
+  #Call already involves a model, but might not be acting on a record
+  def likely_model_attribute? exp
+    return false unless call? exp
+
+    method = exp.method
+
+    if MODEL_METHODS.include? method or method.to_s.start_with? "find_by_"
+      true
+    else
+      likely_model_attribute? exp.target
     end
   end
 
@@ -231,16 +249,7 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
     method = exp.method
 
     #Ignore safe items
-    if (target.nil? and (@ignore_methods.include? method or method.to_s =~ IGNORE_LIKE)) or
-      (@matched and @matched.type == :model and IGNORE_MODEL_METHODS.include? method) or
-      (target == HAML_HELPERS and method == :html_escape) or
-      ((target == URI or target == CGI) and method == :escape) or
-      (target == XML_HELPER and method == :escape_xml) or
-      (target == FORM_BUILDER and @ignore_methods.include? method) or
-      (target and @safe_input_attributes.include? method) or
-      (method.to_s[-1,1] == "?")
-
-      #exp[0] = :ignore #should not be necessary
+    if ignore_call? target, method
       @matched = false
     elsif sexp? target and model_name? target[1] #TODO: use method call?
       @matched = Match.new(:model, exp)
@@ -294,5 +303,52 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
 
   def raw_call? exp
     exp.value.node_type == :call and exp.value.method == :raw
+  end
+
+  def ignore_call? target, method
+    ignored_method?(target, method) or
+    safe_input_attribute?(target, method) or
+    ignored_model_method?(method) or
+    form_builder_method?(target, method) or
+    haml_escaped?(target, method) or
+    boolean_method?(method) or
+    cgi_escaped?(target, method) or
+    xml_escaped?(target, method)
+  end
+
+  def ignored_model_method? method
+    @matched and
+    @matched.type == :model and
+    IGNORE_MODEL_METHODS.include? method
+  end
+
+  def ignored_method? target, method
+    target.nil? and
+    (@ignore_methods.include? method or method.to_s =~ IGNORE_LIKE)
+  end
+
+  def cgi_escaped? target, method
+    method == :escape and
+    (target == URI or target == CGI)
+  end
+
+  def haml_escaped? target, method
+    method == :html_escape and target == HAML_HELPERS
+  end
+
+  def xml_escaped? target, method
+    method == :escape_xml and target == XML_HELPER
+  end
+
+  def form_builder_method? target, method
+    target == FORM_BUILDER and @ignore_methods.include? method
+  end
+
+  def safe_input_attribute? target, method
+    target and @safe_input_attributes.include? method
+  end
+
+  def boolean_method? method
+    method.to_s.end_with? "?"
   end
 end

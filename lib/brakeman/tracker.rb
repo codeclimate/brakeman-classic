@@ -10,7 +10,7 @@ class Brakeman::Tracker
   attr_accessor :controllers, :templates, :models, :errors,
     :checks, :initializers, :config, :routes, :processor, :libs,
     :template_cache, :options, :filter_cache, :start_time, :end_time,
-    :duration
+    :duration, :ignored_filter
 
   #Place holder when there should be a model, but it is not
   #clear what model it will be.
@@ -150,6 +150,20 @@ class Brakeman::Tracker
   #Returns a Report with this Tracker's information
   def report
     Brakeman::Report.new(@app_tree, self)
+  end
+
+  def warnings
+    self.checks.all_warnings
+  end
+
+  def filtered_warnings
+    if self.ignored_filter
+      self.warnings.reject do |w|
+        self.ignored_filter.ignored? w
+      end
+    else
+      self.warnings
+    end
   end
 
   def index_call_sites
