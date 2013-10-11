@@ -43,9 +43,11 @@ unless options[:app_path]
 end
 
 if options[:app_path] =~ /^bertrpc:\/\//
-  options[:bertrpc] = true
+  options[:protocol] = "bertrpc"
+elsif options[:app_path] =~ /^git:\/\//
+  options[:protocol] = "git"
 else
-  options[:bertrpc] = false
+  options[:protocol] = "file"
 end
 
 trap("INT") do

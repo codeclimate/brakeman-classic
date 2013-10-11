@@ -1,5 +1,6 @@
 module Brakeman
   class AppTree
+
     VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb html.slim]
 
     attr_reader :root
@@ -18,11 +19,11 @@ module Brakeman
         init_options[:only_files] = Regexp.new("(?:" << options[:only_files].map { |f| Regexp.escape f }.join("|") << ")")
       end
 
-      if options[:bertrpc]
-        require "brakeman/smoke_app_tree"
-        SmokeAppTree.new(root, init_options[:skip_files])
-      else
+      if options[:protocol] == "file"
         new(root, init_options)
+      else
+        require "brakeman/grit_app_tree"
+        GritAppTree.new(root, init_options[:skip_files])
       end
     end
 
@@ -87,7 +88,6 @@ module Brakeman
     end
 
   private
-
     def find_paths(directory, extensions = "*.rb")
       pattern = @root + "/#{directory}/**/#{extensions}"
 
