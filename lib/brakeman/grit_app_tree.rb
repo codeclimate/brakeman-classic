@@ -64,8 +64,8 @@ module Brakeman
         @commit_sha = uri_parts[2]
       else
         parsed_query = Rack::Utils.parse_query(@uri.query)
-        @prefix = @uri.path
-        @repo_id = @prefix.split("/").last
+        @repo_id = nil#@prefix.split("/").last
+        @prefix = parsed_query.delete("prefix") || ""
         @commit_sha = parsed_query.delete("commit_sha")
       end
     end
@@ -110,8 +110,6 @@ module Brakeman
 
     def contents
       commit = grit_repo.commit(@commit_sha)
-            require 'pry';binding.pry
-
       tree_id = commit.tree.id
       output = grit_repo.git.native(:ls_tree, { r: true }, tree_id)
       grit_tree = ::Grit::Tree.allocate.construct_initialize(grit_repo, tree_id, output)
