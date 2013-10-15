@@ -76,7 +76,10 @@ module Brakeman
       options[:quiet] = true
     end
 
-    options[:app_path] = File.expand_path(options[:app_path]) unless options[:bertrpc]
+    if options[:protocol] == "file"
+      options[:app_path] = File.expand_path(options[:app_path])
+    end
+
     options[:output_formats] = get_output_formats options
 
     options
@@ -306,8 +309,8 @@ module Brakeman
     end
 
     if $statsd
-      require 'brakeman/smoke_app_tree'
-      instrumentation = Brakeman::SmokeAppTree::SmokeInstrumentation
+      require 'brakeman/smoke_client'
+      instrumentation = SmokeInstrumentation
       $statsd.timing "worker.brakeman.smoke.total_time", instrumentation.runtime
       $statsd.gauge "worker.brakeman.smoke.total_call_count", instrumentation.call_count
       notify "Total Smoke Time: #{(instrumentation.runtime / 1000.0)} seconds"

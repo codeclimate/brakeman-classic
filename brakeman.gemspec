@@ -24,4 +24,5 @@ Gem::Specification.new do |s|
   s.add_dependency "grit"
   s.add_dependency "statsd-ruby"
   s.add_dependency "activesupport"
+  s.add_dependency "rack"
 end
