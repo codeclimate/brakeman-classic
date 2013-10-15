@@ -310,7 +310,7 @@ module Brakeman
 
     if $statsd
       require 'brakeman/smoke_client'
-      instrumentation = Brakeman::SmokeAppTree::SmokeInstrumentation
+      instrumentation = SmokeInstrumentation
       $statsd.timing "worker.brakeman.smoke.total_time", instrumentation.runtime
       $statsd.gauge "worker.brakeman.smoke.total_call_count", instrumentation.call_count
       notify "Total Smoke Time: #{(instrumentation.runtime / 1000.0)} seconds"

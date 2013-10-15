@@ -38,7 +38,6 @@ class SmokeClient
 end
 
 class SmokeInstrumentation
-
   def self.runtime=(value)
     @runtime = value
   end
