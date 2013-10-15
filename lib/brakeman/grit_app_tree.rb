@@ -4,7 +4,7 @@ require "active_support/core_ext"
 require "pathname"
 require "grit"
 require "uri"
-require "rack/utils"
+require "rack"
 
 module Brakeman
   class GritAppTree < AppTree  
