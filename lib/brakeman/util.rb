@@ -274,7 +274,7 @@ module Brakeman::Util
     end
 
     if warning.file
-      if tracker.options[:bertrpc]
+      if tracker.options[:protocol] == "bertrpc"
         warning.file
       else
         File.expand_path warning.file, tracker.options[:app_path]
