@@ -16,7 +16,7 @@ class Brakeman::CheckDefaultRoutes < Brakeman::BaseCheck
         :message => "All public methods in controllers are available as actions in routes.rb",
         :line => tracker.routes[:allow_all_actions].line, 
         :confidence => CONFIDENCE[:high],
-        :file => "#{tracker.options[:app_path]}/config/routes.rb"
+        :file => "config/routes.rb"
     else #Report each controller separately
       Brakeman.debug "Checking each controller for default routes"
 
@@ -28,7 +28,7 @@ class Brakeman::CheckDefaultRoutes < Brakeman::BaseCheck
             :message => "Any public method in #{name} can be used as an action.",
             :line => actions[1],
             :confidence => CONFIDENCE[:med],
-            :file => "#{tracker.options[:app_path]}/config/routes.rb"
+            :file => "config/routes.rb"
         end
       end
     end
