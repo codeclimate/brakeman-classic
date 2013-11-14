@@ -42,14 +42,6 @@ unless options[:app_path]
   end
 end
 
-if options[:app_path] =~ /^bertrpc:\/\//
-  options[:protocol] = "bertrpc"
-elsif options[:app_path] =~ /^git:\/\//
-  options[:protocol] = "git"
-else
-  options[:protocol] = "file"
-end
-
 trap("INT") do
   $stderr.puts "\nInterrupted - exiting."
 

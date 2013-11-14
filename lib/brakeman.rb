@@ -65,6 +65,14 @@ module Brakeman
       options = { :app_path => options }
     end
 
+    if options[:app_path] =~ /^bertrpc:\/\//
+      options[:protocol] = "bertrpc"
+    elsif options[:app_path] =~ /^git:\/\//
+      options[:protocol] = "git"
+    else
+      options[:protocol] = "file"
+    end
+
     if options[:quiet] == :command_line
       command_line = true
       options.delete :quiet
