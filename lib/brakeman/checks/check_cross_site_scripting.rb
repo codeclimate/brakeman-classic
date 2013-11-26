@@ -66,6 +66,8 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
       true? tracker.config[:rails][:active_support][:escape_html_entities_in_json]
 
         json_escape_on = true
+    elsif version_between? "4.0.0", "5.0.0"
+      json_escape_on = true
     end
 
     if !json_escape_on or version_between? "0.0.0", "2.0.99"
@@ -122,7 +124,7 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
       unless IGNORE_MODEL_METHODS.include? method
         add_result exp
 
-        if MODEL_METHODS.include? method or method.to_s =~ /^find_by/
+        if likely_model_attribute? match
           confidence = CONFIDENCE[:high]
         else
           confidence = CONFIDENCE[:med]
@@ -138,18 +140,36 @@ class Brakeman::CheckCrossSiteScripting < Brakeman::BaseCheck
           warning_code = :xss_to_json
         end
 
-        code = find_chain out, match
+        code = if match == out
+                 nil
+               else
+                 match
+               end
+
         warn :template => @current_template,
           :warning_type => "Cross Site Scripting",
           :warning_code => warning_code,
           :message => message,
-          :code => code,
+          :code => match,
           :confidence => confidence,
           :link_path => link_path
       end
 
     else
       false
+    end
+  end
+
+  #Call already involves a model, but might not be acting on a record
+  def likely_model_attribute? exp
+    return false unless call? exp
+
+    method = exp.method
+
+    if MODEL_METHODS.include? method or method.to_s.start_with? "find_by_"
+      true
+    else
+      likely_model_attribute? exp.target
     end
   end
 

@@ -13,7 +13,7 @@ class Rails31Tests < Test::Unit::TestCase
   def expected
     @expected ||= {
       :model => 3,
-      :template => 22,
+      :template => 23,
       :controller => 4,
       :generic => 72 }
   end
@@ -1032,5 +1032,47 @@ class Rails31Tests < Test::Unit::TestCase
       :message => /^Marshal\.restore\ called\ with\ model\ attrib/,
       :confidence => 1,
       :relative_path => "app/controllers/other_controller.rb"
+  end
+
+  def test_attr_accessible_with_role
+    assert_no_warning :type => :model,
+      :warning_code => 17,
+      :fingerprint => "77c353ad8e5fc9880775ed436bbfa37b005b43aa2978186de92b6916f46fac39",
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ admin\ av/,
+      :confidence => 0,
+      :relative_path => "app/models/user.rb"
+  end
+
+  def test_attr_accessible_not_matching_regex
+    assert_no_warning :type => :model,
+      :warning_code => 60,
+      :fingerprint => "e933f99c33bece852891a466b5b0fc629d9f20ba80ff3bbc42adfd239d5a5b48",
+      :warning_type => "Mass Assignment",
+      :message => /^Potentially\ dangerous\ attribute\ 'blah_admin/,
+      :confidence => 0,
+      :relative_path => "app/models/account.rb"
+  end
+
+  def test_wrong_model_attributes_in_haml
+    assert_no_warning :type => :template,
+      :warning_code => 2,
+      :fingerprint => "8851713f0af477e60090607b814ba68055e4ac1cf19df0628fddd961ff87e763",
+      :warning_type => "Cross Site Scripting",
+      :line => 3,
+      :message => /^Unescaped\ model\ attribute/,
+      :confidence => 0,
+      :relative_path => "app/views/other/test_model_in_haml.html.haml"
+  end
+
+  def test_right_model_attribute_in_haml
+    assert_warning :type => :template,
+      :warning_code => 2,
+      :fingerprint => "3310ef4a4bde8b120fd5d421565ee416af815404e7c116a8069052e8732589d0",
+      :warning_type => "Cross Site Scripting",
+      :line => 7,
+      :message => /^Unescaped\ model\ attribute/,
+      :confidence => 0,
+      :relative_path => "app/views/other/test_model_in_haml.html.haml"
   end
 end
