@@ -28,6 +28,8 @@ require 'test/unit'
 
 require "active_support/core_ext" # not currently used, but causes issues, so leaning into it
 
+require "brakeman/grit_app_tree" # not explicitly tested, but requiring to ensure at least loaded
+
 #Helper methods for running scans
 module BrakemanTester
   class << self
