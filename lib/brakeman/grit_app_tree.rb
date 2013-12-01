@@ -1,13 +1,12 @@
 require "brakeman/app_tree"
 require "brakeman/grit_repo"
-require "active_support/core_ext"
 require "pathname"
 require "grit"
 require "uri"
 require "rack"
 
 module Brakeman
-  class GritAppTree < AppTree  
+  class GritAppTree < AppTree
     attr_accessor :grit_repo
 
     def initialize(url, skip_files = nil)
