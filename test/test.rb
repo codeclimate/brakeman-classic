@@ -26,6 +26,8 @@ require 'brakeman'
 require 'brakeman/scanner'
 require 'test/unit'
 
+require "active_support/core_ext" # not currently used, but causes issues, so leaning into it
+
 #Helper methods for running scans
 module BrakemanTester
   class << self
