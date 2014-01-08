@@ -3,7 +3,11 @@ require 'brakeman/report/initializers/multi_json'
 
 class Brakeman::Report::JSON < Brakeman::Report::Base
   def generate_report
-    errors = tracker.errors.map{|e| { :error => e[:error], :location => e[:backtrace][0] }}
+    errors = tracker.errors.map{|e| { 
+                                      :error => e[:error], 
+                                      :location => e[:backtrace][0],
+                                      :backtrace => e[:backtrace].first(20)
+                                    }}
     app_path = tracker.options[:app_path]
 
     warnings = convert_to_hashes all_warnings
