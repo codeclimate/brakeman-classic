@@ -5,14 +5,14 @@ class Brakeman::TemplateProcessor < Brakeman::BaseProcessor
 
   #Initializes template information.
   def initialize tracker, template_name, called_from = nil, file_name = nil
-    super(tracker) 
+    super(tracker)
     @current_template = { :name => template_name,
                           :caller => called_from,
                           :partial => template_name.to_s[0,1] == "_",
                           :outputs => [],
                           :src => nil, #set in Processor
                           :type => nil, #set in Processor
-                          :file => file_name } 
+                          :file => file_name }
     if called_from
       template_name = (template_name.to_s + "." + called_from.to_s).to_sym
     end
@@ -26,7 +26,7 @@ class Brakeman::TemplateProcessor < Brakeman::BaseProcessor
   def process exp
     begin
       super
-    rescue Exception => e
+    rescue => e
       except = e.exception("Error when processing #{@current_template[:name]}: #{e.message}")
       except.set_backtrace(e.backtrace)
       raise except

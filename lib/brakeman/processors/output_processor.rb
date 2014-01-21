@@ -18,7 +18,7 @@ class Brakeman::OutputProcessor < Ruby2Ruby
   def process exp
     begin
       super exp if sexp? exp and not exp.empty?
-    rescue Exception => e
+    rescue => e
       Brakeman.debug "While formatting #{exp}: #{e}\n#{e.backtrace.join("\n")}"
     end
   end
@@ -56,7 +56,7 @@ class Brakeman::OutputProcessor < Ruby2Ruby
         out << e
       else
         res = process e
-        out << res unless res == "" 
+        out << res unless res == ""
       end
     end
     out << '"'
