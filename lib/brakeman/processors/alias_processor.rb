@@ -88,6 +88,10 @@ class Brakeman::AliasProcessor < Brakeman::SexpProcessor
     method = exp.method
     first_arg = exp.first_arg
 
+    if method == :send or method == :try
+      collapse_send_call exp, first_arg
+    end
+
     if node_type? target, :or and [:+, :-, :*, :/].include? method
       res = process_or_simple_operation(exp)
       return res if res
@@ -220,11 +224,22 @@ class Brakeman::AliasProcessor < Brakeman::SexpProcessor
 
   #Process a method definition.
   def process_methdef exp
-    env.scope do
-      set_env_defaults
+    meth_env do
       exp.body = process_all! exp.body
     end
     exp
+  end
+
+  def meth_env
+    begin
+      env.scope do
+        set_env_defaults
+        @meth_env = env.current
+        yield
+      end
+    ensure
+      @meth_env = nil
+    end
   end
 
   #Process a method definition on self.
@@ -437,9 +452,11 @@ class Brakeman::AliasProcessor < Brakeman::SexpProcessor
       branch_scopes = []
       exps.each_with_index do |branch, i|
         scope do
+          @branch_env = env.current
           branch_index = 2 + i # s(:if, condition, then_branch, else_branch)
           exp[branch_index] = process_if_branch branch
           branch_scopes << env.current
+          @branch_env = nil
         end
       end
 
@@ -527,6 +544,17 @@ class Brakeman::AliasProcessor < Brakeman::SexpProcessor
       string1
     else
       result
+    end
+  end
+
+  # Change x.send(:y, 1) to x.y(1)
+  def collapse_send_call exp, first_arg
+    return unless symbol? first_arg or string? first_arg
+    exp.method = first_arg.value.to_sym
+    args = exp.args
+    exp.pop # remove last arg
+    if args.length > 1
+      exp.arglist = args[1..-1]
     end
   end
 
@@ -731,7 +759,17 @@ class Brakeman::AliasProcessor < Brakeman::SexpProcessor
     end
 
     if @ignore_ifs or not @inside_if
-      env[var] = value
+      if @meth_env and node_type? var, :ivar and env[var].nil?
+        @meth_env[var] = value
+      else
+        env[var] = value
+      end
+    elsif env.current[var]
+      env.current[var] = value
+    elsif @branch_env and @branch_env[var]
+      @branch_env[var] = value
+    elsif @branch_env and @meth_env and node_type? var, :ivar
+      @branch_env[var] = value
     else
       env.current[var] = value
     end
@@ -776,5 +814,4 @@ class Brakeman::AliasProcessor < Brakeman::SexpProcessor
       false
     end
   end
-
 end

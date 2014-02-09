@@ -16,9 +16,18 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
   def run_check
     @rails_version = tracker.config[:rails_version]
 
-    @sql_targets = [:all, :average, :calculate, :count, :count_by_sql, :exists?,
+    @sql_targets = [:all, :average, :calculate, :count, :count_by_sql, :exists?, :delete_all, :destroy_all,
       :find, :find_by_sql, :first, :last, :maximum, :minimum, :pluck, :sum, :update_all]
     @sql_targets.concat [:from, :group, :having, :joins, :lock, :order, :reorder, :select, :where] if tracker.options[:rails3]
+
+    @connection_calls = [:delete, :execute, :insert, :select_all, :select_one,
+      :select_rows, :select_value, :select_values]
+
+    if tracker.options[:rails3]
+      @connection_calls.concat [:exec_delete, :exec_insert, :exec_query, :exec_update]
+    else
+      @connection_calls.concat [:add_limit!, :add_offset_limit!, :add_lock!]
+    end
 
     Brakeman.debug "Finding possible SQL calls on models"
     calls = tracker.find_call :targets => active_record_models.keys,
@@ -26,10 +35,13 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
       :chained => true
 
     Brakeman.debug "Finding possible SQL calls with no target"
-    calls.concat tracker.find_call(:target => nil, :method => @sql_targets)
+    calls.concat tracker.find_call(:target => nil, :methods => @sql_targets)
 
     Brakeman.debug "Finding possible SQL calls using constantized()"
-    calls.concat tracker.find_call(:method => @sql_targets).select { |result| constantize_call? result }
+    calls.concat tracker.find_call(:methods => @sql_targets).select { |result| constantize_call? result }
+
+    connect_targets = active_record_models.keys + [nil, :"ActiveRecord::Base"]
+    calls.concat tracker.find_call(:targets => connect_targets, :methods => @connection_calls, :chained => true).select { |result| connect_call? result }
 
     Brakeman.debug "Finding calls to named_scope or scope"
     calls.concat find_scope_calls
@@ -134,6 +146,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
   #
   def process_result result
     return if duplicate?(result) or result[:call].original_line
+    return if result[:target].nil? && !active_record_models.include?(result[:location][:class])
+
 
     call = result[:call]
     method = call.method
@@ -141,7 +155,7 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     dangerous_value = case method
                       when :find
                         check_find_arguments call.second_arg
-                      when :exists?
+                      when :exists?, :delete_all, :destroy_all
                         check_find_arguments call.first_arg
                       when :named_scope, :scope
                         check_scope_arguments call
@@ -171,6 +185,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
                         unsafe_sql? call.first_arg
                       when :update_all
                         check_update_all_arguments call.args
+                      when *@connection_calls
+                        check_by_sql_arguments call.first_arg
                       else
                         Brakeman.debug "Unhandled SQL method: #{method}"
                       end
@@ -340,10 +356,44 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
   #unless safe_value? explicitly returns true.
   def check_string_interp arg
     arg.each do |exp|
-      return exp.value if node_type?(exp, :string_eval, :evstr) and not safe_value?(exp.value)
+      if dangerous = unsafe_string_interp?(exp)
+        return dangerous
+      end
     end
 
     nil
+  end
+
+  #Returns value if interpolated value is not something safe
+  def unsafe_string_interp? exp
+    if node_type? exp, :string_eval, :evstr
+      value = exp.value
+    else
+      value = exp
+    end
+
+    if not sexp? value
+      nil
+    elsif call? value and value.method == :to_s
+      unsafe_string_interp? value.target
+    else
+      case value.node_type
+      when :or
+        unsafe_string_interp?(value.lhs) || unsafe_string_interp?(value.rhs)
+      when :string_interp, :dstr
+        if dangerous = check_string_interp(value)
+          return dangerous
+        end
+      else
+        if safe_value? value
+          nil
+        elsif string_building? value
+          check_for_string_building value
+        else
+          value
+        end
+      end
+    end
   end
 
   #Checks the given expression for unsafe SQL values. If an unsafe value is
@@ -441,14 +491,47 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
 
     target = exp.target
     method = exp.method
+    arg = exp.first_arg
 
-    if string? target or string? exp.first_arg
-      return exp if STRING_METHODS.include? method
-    elsif STRING_METHODS.include? method and call? target
-      return unsafe_sql? target
+    if STRING_METHODS.include? method
+      if string? target
+        check_string_arg arg
+      elsif string? arg
+        check_string_arg target
+      elsif call? target
+        check_for_string_building target
+      elsif node_type? target, :string_interp, :dstr or
+            node_type? arg, :string_interp, :dstr
+
+        check_string_arg target and
+        check_string_arg arg
+      end
+    else
+      nil
     end
+  end
 
-    nil
+  def check_string_arg exp
+    if safe_value? exp
+      nil
+    elsif string_building? exp
+      check_for_string_building exp
+    elsif node_type? exp, :string_interp, :dstr
+      check_string_interp exp
+    elsif call? exp and exp.method == :to_s
+      check_string_arg exp.target
+    else
+      exp
+    end
+  end
+
+  def string_building? exp
+    return false unless call? exp and STRING_METHODS.include? exp.method
+
+    node_type? exp.target, :str, :dstr, :string_interp or
+    node_type? exp.first_arg, :str, :dstr, :string_interp or
+    string_building? exp.target or
+    string_building? exp.first_arg
   end
 
   IGNORE_METHODS_IN_SQL = Set[:id, :merge_conditions, :table_name, :to_i, :to_f,
@@ -464,7 +547,13 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     when :str, :lit, :const, :colon2, :nil, :true, :false
       true
     when :call
-      IGNORE_METHODS_IN_SQL.include? exp.method
+      if exp.method == :to_s
+        safe_value? exp.target
+      else
+        IGNORE_METHODS_IN_SQL.include? exp.method or
+        quote_call? exp or
+        exp.method.to_s.end_with? "_id"
+      end
     when :if
       safe_value? exp.then_clause and safe_value? exp.else_clause
     when :block, :rlist
@@ -473,6 +562,16 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
       safe_value? exp.lhs and safe_value? exp.rhs
     else
       false
+    end
+  end
+
+  QUOTE_METHODS = [:quote, :quote_column_name, :quoted_date, :quote_string, :quote_table_name]
+
+  def quote_call? exp
+    if call? exp.target
+      exp.target.method == :connection and QUOTE_METHODS.include? exp.method
+    elsif exp.target.nil?
+      exp.method == :quote_value
     end
   end
 
@@ -521,6 +620,24 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     call? call.target and call.target.method == :constantize
   end
 
+  SELF_CLASS = s(:call, s(:self), :class)
+
+  def connect_call? result
+    call = result[:call]
+    target = call.target
+
+    if call? target and target.method == :connection
+      target = target.target
+      klass = class_name(target)
+
+      target.nil? or
+      target == SELF_CLASS or
+      node_type? target, :self or
+      klass == :"ActiveRecord::Base" or
+      active_record_models.include? klass
+    end
+  end
+
   def upgrade_version? versions
     versions.each do |low, high, upgrade|
       return upgrade if version_between? low, high
@@ -529,8 +646,8 @@ class Brakeman::CheckSQL < Brakeman::BaseCheck
     false
   end
 
-def check_rails_versions_against_cve_issues
-    [
+  def check_rails_versions_against_cve_issues
+    issues = [
       {
         :cve => "CVE-2012-2660",
         :versions => [%w[2.0.0 2.3.14 2.3.17], %w[3.0.0 3.0.12 3.0.13], %w[3.1.0 3.1.4 3.1.5], %w[3.2.0 3.2.3 3.2.4]],
@@ -556,7 +673,18 @@ def check_rails_versions_against_cve_issues
         :versions => [%w[2.0.0 2.3.15 2.3.16], %w[3.0.0 3.0.18 3.0.19], %w[3.1.0 3.1.9 3.1.10], %w[3.2.0 3.2.10 3.2.11]],
         :url => "https://groups.google.com/d/topic/rubyonrails-security/c7jT-EeN9eI/discussion"
       },
-    ].each do |cve_issue|
+
+    ]
+
+    unless lts_version? '2.3.18.6'
+     issues << {
+        :cve => "CVE-2013-6417",
+        :versions => [%w[2.0.0 3.2.15 3.2.16], %w[4.0.0 4.0.1 4.0.2]],
+        :url => "https://groups.google.com/d/msg/ruby-security-ann/niK4drpSHT4/g8JW8ZsayRkJ"
+      }
+    end
+
+    issues.each do |cve_issue|
       cve_warning_for cve_issue[:versions], cve_issue[:cve], cve_issue[:url]
     end
   end

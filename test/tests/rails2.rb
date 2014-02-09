@@ -12,13 +12,13 @@ class Rails2Tests < Test::Unit::TestCase
         :controller => 1,
         :model => 3,
         :template => 45,
-        :generic => 46 }
+        :generic => 49 }
     else
       @expected ||= {
         :controller => 1,
         :model => 3,
         :template => 45,
-        :generic => 47 }
+        :generic => 50 }
     end
   end
 
@@ -306,6 +306,30 @@ class Rails2Tests < Test::Unit::TestCase
       :confidence => 0,
       :file => /home_controller\.rb/,
       :relative_path => "app/controllers/home_controller.rb"
+  end
+
+  def test_sql_injection_false_positive_quote_value
+    assert_no_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "6ea8fe3abe8eac86e5ecb790b53fb064b1152b2574b14d9354a40d07269a952e",
+      :warning_type => "SQL Injection",
+      :line => 30,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :relative_path => "app/models/user.rb",
+      :user_input => s(:call, s(:call, s(:str, "DELETE FROM cool_table WHERE cool_id="), :+, s(:call, nil, :quote_value, s(:call, s(:self), :cool_id))), :+, s(:str, "  AND my_id="))
+  end
+
+  def test_sql_injection_sanitize_sql
+    assert_no_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "7481ff666ae949b8442400cf516615ce8b04b87f7e11e33e29d4ad1303d24dd0",
+      :warning_type => "SQL Injection",
+      :line => 26,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :relative_path => "app/models/user.rb",
+      :user_input => s(:call, s(:str, "select * from cool_table where stuff = "), :+, s(:call, s(:self), :sanitize_sql, s(:lvar, :input)))
   end
 
   def test_csrf_protection
@@ -610,6 +634,18 @@ class Rails2Tests < Test::Unit::TestCase
       :confidence => 0,
       :file => /user\.rb/,
       :relative_path => "app/models/user.rb"
+  end
+ 
+  def test_sql_injection_active_record_base_connection
+    assert_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "37885d589fc5c41553dcc38b36b506c2e508d1f37ce040eb6dca92a958f858fb",
+      :warning_type => "SQL Injection",
+      :line => 26,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :relative_path => "app/models/user.rb",
+      :user_input => s(:lvar, :value)
   end
 
   def test_escape_once
@@ -955,6 +991,28 @@ class Rails2Tests < Test::Unit::TestCase
       :relative_path => "config/environment.rb"
   end
 
+  def test_number_to_currency_CVE_2013_6415
+    assert_warning :type => :warning,
+      :warning_code => 65,
+      :fingerprint => "1822c8179beeb0358b71c545bad0dd824104aed8b995fe0781c1b6e324417a91",
+      :warning_type => "Cross Site Scripting",
+      :message => /^Rails\ 2\.3\.11\ has\ a\ vulnerability\ in\ numb/,
+      :confidence => 1,
+      :relative_path => "config/environment.rb"
+  end
+
+  def test_sql_injection_CVE_2013_6417
+    assert_warning :type => :warning,
+      :warning_code => 69,
+      :fingerprint => "378978cda99add8404dd38db466f6ffa0b824ea8c57270d98869241a240d12a6",
+      :warning_type => "SQL Injection",
+      :line => nil,
+      :message => /^Rails\ 2\.3\.11\ contains\ a\ SQL\ injection\ vu/,
+      :confidence => 0,
+      :relative_path => "config/environment.rb",
+      :user_input => nil
+  end
+
   def test_to_json
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -1105,7 +1163,7 @@ class Rails2Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "Remote Code Execution",
       :line => 89,
-      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :message => /^Unsafe\ reflection\ method\ constantize\ cal/,
       :confidence => 0,
       :file => /home_controller\.rb/,
       :relative_path => "app/controllers/home_controller.rb"
@@ -1115,7 +1173,7 @@ class Rails2Tests < Test::Unit::TestCase
       :warning_code => 24,
       :warning_type => "Remote Code Execution",
       :line => 1,
-      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :message => /^Unsafe\ reflection\ method\ constantize\ cal/,
       :confidence => 0,
       :relative_path => "app/views/home/test_send_target.html.erb"
   end
@@ -1124,7 +1182,7 @@ class Rails2Tests < Test::Unit::TestCase
     assert_warning :type => :warning,
       :warning_type => "Remote Code Execution",
       :line => 160,
-      :message => /^Unsafe\ Reflection\ method\ constantize\ cal/,
+      :message => /^Unsafe\ reflection\ method\ constantize\ cal/,
       :confidence => 0,
       :file => /home_controller\.rb/,
       :relative_path => "app/controllers/home_controller.rb"
@@ -1230,13 +1288,13 @@ class Rails2WithOptionsTests < Test::Unit::TestCase
         :controller => 1,
         :model => 4,
         :template => 45,
-        :generic => 46 }
+        :generic => 49 }
     else
       @expected ||= {
         :controller => 1,
         :model => 4,
         :template => 45,
-        :generic => 47 }
+        :generic => 50 }
     end
   end
 

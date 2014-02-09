@@ -29,7 +29,7 @@ Using RubyGems:
 
     gem install brakeman
 
-Using Bundler, add to development group in Gemfile:
+Using Bundler, add to development group in Gemfile and set to not be required automatically:
 
     group :development do
       gem 'brakeman', :require => false
@@ -163,4 +163,16 @@ The default config locations are `./config/brakeman.yml`, `~/.brakeman/config.ym
 
 The `-c` option can be used to specify a configuration file to use.
 
-# License see MIT-LICENSE
+# Who is Using Brakeman?
+
+* [Code Climate](https://codeclimate.com/)
+* [GitHub](https://github.com/)
+* [Groupon](http://www.groupon.com/)
+* [New Relic](http://newrelic.com)
+* [Twitter](https://twitter.com/)
+
+[..and more!](http://brakemanscanner.org/brakeman_users)
+
+# License
+
+see MIT-LICENSE

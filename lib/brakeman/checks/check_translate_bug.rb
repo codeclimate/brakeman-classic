@@ -7,6 +7,7 @@ class Brakeman::CheckTranslateBug < Brakeman::BaseCheck
   @description = "Report XSS vulnerability in translate helper"
 
   def run_check
+    return if lts_version? '2.3.18.6'
     if (version_between?('2.3.0', '2.3.99') and tracker.config[:escape_html]) or
         version_between?('3.0.0', '3.0.10') or
         version_between?('3.1.0', '3.1.1')
@@ -25,7 +26,7 @@ class Brakeman::CheckTranslateBug < Brakeman::BaseCheck
       elsif version =~ /^3\.0/
         "Versions before 3.0.11 #{description}."
       else
-        "Rails 2.3.x using the rails_xss plugin #{description}}."
+        "Rails 2.3.x using the rails_xss plugin #{description}."
       end
 
       warn :warning_type => "Cross Site Scripting",

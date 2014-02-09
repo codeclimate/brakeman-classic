@@ -60,7 +60,18 @@ module Brakeman::WarningCodes
     :CVE_2013_1856 => 57,
     :CVE_2013_1857 => 58,
     :unsafe_symbol_creation => 59,
-    :dangerous_attr_accessible => 60
+    :dangerous_attr_accessible => 60,
+    :local_request_config => 61,
+    :detailed_exceptions => 62,
+    :CVE_2013_4491 => 63,
+    :CVE_2013_6414 => 64,
+    :CVE_2013_6415 => 65,
+    :CVE_2013_6415_call => 66,
+    :CVE_2013_6416 => 67,
+    :CVE_2013_6416_call => 68,
+    :CVE_2013_6417 => 69,
+    :mass_assign_permit! => 70,
+    :ssl_verification_bypass => 71
   }
 
   def self.code name

@@ -16,7 +16,7 @@ class Rails3Tests < Test::Unit::TestCase
       :controller => 1,
       :model => 8,
       :template => 38,
-      :generic => 63
+      :generic => 70
     }
 
     if RUBY_PLATFORM == 'java'
@@ -671,6 +671,56 @@ class Rails3Tests < Test::Unit::TestCase
       :file => /underline_model\.rb/
   end
 
+  def test_sql_injection_delete_all
+    assert_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "6ae0b599e368b7658cfe3772ab0823d68247796b3718eaa6c1228897d633e0a2",
+      :warning_type => "SQL Injection",
+      :line => 57,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 0,
+      :relative_path => "app/controllers/other_controller.rb",
+      :user_input => s(:call, s(:params), :[], s(:lit, :name))
+  end
+
+  def test_sql_injection_destroy_all
+    assert_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "0631b0564dfe4bb760c250e1de7f0678dd28e5be5c54841fa8581ac3bf2ffaaf",
+      :warning_type => "SQL Injection",
+      :line => 58,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 0,
+      :relative_path => "app/controllers/other_controller.rb",
+      :user_input => s(:call, s(:call, s(:const, :User), :current), :humanity)
+  end
+
+  def test_sql_injection_to_s_value
+    assert_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "92eae7165aea8653ce37be36b5a843114fd7d6ce61f272db03239dfdaa151ee8",
+      :warning_type => "SQL Injection",
+      :line => 64,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :relative_path => "app/controllers/other_controller.rb",
+      :user_input => s(:call, nil, :product_action_type_key)
+
+    assert_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "6066950e19a729359e867b882323ef75334791bdceac75a16f586fc53f3318a0",
+      :warning_type => "SQL Injection",
+      :line => 68,
+      :message => /^Possible\ SQL\ injection/,
+      :confidence => 1,
+      :relative_path => "app/controllers/other_controller.rb",
+      :user_input => s(:lvar, :status)
+
+    assert_no_warning :type => :warning,
+      :warning_code => 0,
+      :fingerprint => "c36f33e3b004e081622f1829be288ebdad673a7bf04922eb1d2b9a3d701362a1"
+  end
+
   def test_escape_once
     results = find :type => :template,
       :warning_type => "Cross Site Scripting",
@@ -1081,10 +1131,46 @@ class Rails3Tests < Test::Unit::TestCase
 
   def test_denial_of_service_CVE_2013_1854
     assert_no_warning :type => :warning,
+      :warning_code => 55,
+      :fingerprint => "2746b8872d4f46676a8c490a7ac906d23f6b11c9d83b6371ff5895139ec7b43b",
       :warning_type => "Denial of Service",
       :message => /^Rails\ 3\.0\.3\ has\ a\ denial\ of\ service\ vul/,
       :confidence => 1,
       :file => /Gemfile/
+  end
+
+  def test_denial_of_service_CVE_2013_6414
+    assert_warning :type => :warning,
+      :warning_code => 64,
+      :fingerprint => "a7b00f08e4a18c09388ad017876e3f57d18040ead2816a2091f3301b6f0e5a00",
+      :warning_type => "Denial of Service",
+      :message => /^Rails\ 3\.0\.3\ has\ a\ denial\ of\ service\ vuln/,
+      :confidence => 1,
+      :relative_path => "Gemfile"
+  end
+
+  def test_number_to_currency_CVE_2013_6415
+    assert_warning :type => :warning,
+      :warning_code => 65,
+      :fingerprint => "813b00b5c58567fb3f32051578b839cb25fc2d827834a30d4b213a4c126202a2",
+      :warning_type => "Cross Site Scripting",
+      :line => nil,
+      :message => /^Rails\ 3\.0\.3\ has\ a\ vulnerability\ in\ numbe/,
+      :confidence => 1,
+      :relative_path => "Gemfile",
+      :user_input => nil
+  end
+
+  def test_sql_injection_CVE_2013_6417
+    assert_warning :type => :warning,
+      :warning_code => 69,
+      :fingerprint => "e1b66f4311771d714a13be519693c540d7e917511a758827d9b2a0a7f958e40f",
+      :warning_type => "SQL Injection",
+      :line => nil,
+      :message => /^Rails\ 3\.0\.3\ contains\ a\ SQL\ injection\ vul/,
+      :confidence => 0,
+      :relative_path => "Gemfile",
+      :user_input => nil
   end
 
   def test_http_only_session_setting

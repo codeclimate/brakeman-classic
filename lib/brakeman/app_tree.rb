@@ -79,17 +79,17 @@ module Brakeman
     end
 
     def layout_exists?(name)
-      pattern = "#{@root}/app/views/layouts/#{name}.html.{erb,haml,slim}"
+      pattern = "#{@root}/{engines/*/,}app/views/layouts/#{name}.html.{erb,haml,slim}"
       !Dir.glob(pattern).empty?
     end
 
     def lib_paths
-      @lib_files ||= find_paths("lib")
+      @lib_files ||= find_paths("lib").reject { |path| path.include? "/generators/" }
     end
 
   private
     def find_paths(directory, extensions = "*.rb")
-      pattern = @root + "/#{directory}/**/#{extensions}"
+      pattern = @root + "/{engines/*/,}#{directory}/**/#{extensions}"
 
       select_files(Dir.glob(pattern).sort)
     end
