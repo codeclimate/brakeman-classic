@@ -304,7 +304,9 @@ module Brakeman
 
     tracker.run_checks
 
-    self.filter_warnings tracker, options
+    if options[:protocol] == "file" # filtering not yet support for grit/git protocols
+      self.filter_warnings tracker, options
+    end
 
     if options[:output_files]
       notify "Generating report..."
