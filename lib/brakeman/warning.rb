@@ -211,7 +211,7 @@ class Brakeman::Warning
   def format_ruby code, strip
     formatted = Brakeman::OutputProcessor.new.format(code)
     formatted.gsub!(/(\t|\r|\n)+/, " ") if strip
-    formatted
+    formatted.force_encoding("utf-8")
   end
 end
 
