@@ -1,3 +1,8 @@
+# NOTE: Please do not add any further tests to the Rails 2 application unless
+# the issue being tested specifically applies to Rails 2 and not the other
+# versions.
+# If possible, please use the rails3, rails3.1, or rails4 apps.
+
 abort "Please run using test/test.rb" unless defined? BrakemanTester
 
 Rails2 = BrakemanTester.run_scan "rails2", "Rails 2"
@@ -12,13 +17,13 @@ class Rails2Tests < Test::Unit::TestCase
         :controller => 1,
         :model => 3,
         :template => 47,
-        :generic => 49 }
+        :generic => 55 }
     else
       @expected ||= {
         :controller => 1,
         :model => 3,
         :template => 47,
-        :generic => 50 }
+        :generic => 56 }
     end
   end
 
@@ -635,7 +640,7 @@ class Rails2Tests < Test::Unit::TestCase
       :file => /user\.rb/,
       :relative_path => "app/models/user.rb"
   end
- 
+
   def test_sql_injection_active_record_base_connection
     assert_warning :type => :warning,
       :warning_code => 0,
@@ -991,14 +996,16 @@ class Rails2Tests < Test::Unit::TestCase
       :relative_path => "config/environment.rb"
   end
 
-  def test_number_to_currency_CVE_2013_6415
+  def test_number_to_currency_CVE_2014_0081
     assert_warning :type => :warning,
-      :warning_code => 65,
-      :fingerprint => "1822c8179beeb0358b71c545bad0dd824104aed8b995fe0781c1b6e324417a91",
+      :warning_code => 73,
+      :fingerprint => "dd82650c29c3ec7b77437c32d394641744208b42b2aeb673d54e5f42c51e6c33",
       :warning_type => "Cross Site Scripting",
+      :line => nil,
       :message => /^Rails\ 2\.3\.11\ has\ a\ vulnerability\ in\ numb/,
       :confidence => 1,
-      :relative_path => "config/environment.rb"
+      :relative_path => "config/environment.rb",
+      :user_input => nil
   end
 
   def test_sql_injection_CVE_2013_6417
@@ -1010,6 +1017,18 @@ class Rails2Tests < Test::Unit::TestCase
       :message => /^Rails\ 2\.3\.11\ contains\ a\ SQL\ injection\ vu/,
       :confidence => 0,
       :relative_path => "config/environment.rb",
+      :user_input => nil
+  end
+
+  def test_remote_code_execution_CVE_2014_0130
+    assert_warning :type => :warning,
+      :warning_code => 77,
+      :fingerprint => "93393e44a0232d348e4db62276b18321b4cbc9051b702d43ba2fd3287175283c",
+      :warning_type => "Remote Code Execution",
+      :line => nil,
+      :message => /^Rails\ 2\.3\.11\ with\ globbing\ routes\ is\ vul/,
+      :confidence => 0,
+      :relative_path => "config/routes.rb",
       :user_input => nil
   end
 
@@ -1213,7 +1232,7 @@ class Rails2Tests < Test::Unit::TestCase
   end
 
   def test_unsafe_symbol_creation
-    [40,41].each do |line|
+    [41,42].each do |line|
       assert_warning :type => :warning,
         :warning_type => "Denial of Service",
         :line => line,
@@ -1242,6 +1261,60 @@ class Rails2Tests < Test::Unit::TestCase
       :confidence => 1,
       :file => /application_controller\.rb/,
       :relative_path => "app/controllers/application_controller.rb"
+  end
+
+  def test_unsafe_symbol_creation_4
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :line => 86,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string\ \(pa/,
+      :confidence => 0,
+      :file => /other_controller\.rb/,
+      :relative_path => "app/controllers/other_controller.rb"
+  end
+
+  def test_unsafe_symbol_creation_5
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :line => 88,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string\ \(pa/,
+      :confidence => 1,
+      :file => /other_controller\.rb/,
+      :relative_path => "app/controllers/other_controller.rb"
+  end
+
+  def test_unsafe_symbol_creation_6
+    assert_warning :type => :warning,
+      :warning_type => "Denial of Service",
+      :line => 44,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string\ \(pa/,
+      :confidence => 1,
+      :file => /application_controller\.rb/,
+      :relative_path => "app/controllers/application_controller.rb"
+  end
+
+  def test_regex_dos
+    assert_warning :type => :warning,
+      :warning_code => 76,
+      :fingerprint => "4ac4f6438b6ad6deb9dfec0d96a47f071853396b4325dad85ebb6aa87b309c98",
+      :warning_type => "Denial of Service",
+      :line => 74,
+      :message => /^Parameter\ value\ used\ in\ regex/,
+      :confidence => 0,
+      :relative_path => "app/controllers/other_controller.rb",
+      :user_input => s(:call, s(:params), :[], s(:lit, :regex))
+  end
+
+  def test_indirect_regex_dos
+    assert_warning :type => :warning,
+      :warning_code => 76,
+      :fingerprint => "b7a197708a04abd2d8f0ca402f3bb0e8690f57685814e09440d1946ba279b14f",
+      :warning_type => "Denial of Service",
+      :line => 82,
+      :message => /^Parameter\ value\ used\ in\ regex/,
+      :confidence => 2,
+      :relative_path => "app/controllers/other_controller.rb",
+      :user_input => s(:call, s(:params), :[], s(:lit, :regex))
   end
 
   def test_unsafe_symbol_creation_from_param
@@ -1312,13 +1385,13 @@ class Rails2WithOptionsTests < Test::Unit::TestCase
         :controller => 1,
         :model => 4,
         :template => 47,
-        :generic => 49 }
+        :generic => 55 }
     else
       @expected ||= {
         :controller => 1,
         :model => 4,
         :template => 47,
-        :generic => 50 }
+        :generic => 56 }
     end
   end
 

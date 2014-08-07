@@ -1,7 +1,7 @@
 module Brakeman
   class AppTree
 
-    VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb html.slim]
+    VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb html.slim].join(",")
 
     attr_reader :root
 
@@ -11,8 +11,7 @@ module Brakeman
       # Convert files into Regexp for matching
       init_options = {}
       if options[:skip_files]
-        init_options[:skip_files] = "(?:" << options[:skip_files].map { |f| Regexp.escape f }.join("|") << ")$"
-        init_options[:skip_files] = Regexp.new(init_options[:skip_files])
+        init_options[:skip_files] = Regexp.new("(?:" << options[:skip_files].map { |f| Regexp.escape f }.join("|") << ")$")
       end
 
       if options[:only_files]

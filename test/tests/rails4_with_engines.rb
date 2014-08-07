@@ -11,7 +11,7 @@ class Rails4WithEnginesTests < Test::Unit::TestCase
       :controller => 0,
       :model => 5,
       :template => 11,
-      :generic => 6 }
+      :generic => 7 }
   end
 
   def report
@@ -28,10 +28,10 @@ class Rails4WithEnginesTests < Test::Unit::TestCase
       :relative_path => "Gemfile"
   end
 
-  def test_number_to_currency_CVE_2013_6415
+  def test_number_to_currency_CVE_2014_0081
     assert_warning :type => :warning,
-      :warning_code => 65,
-      :fingerprint => "813b00b5c58567fb3f32051578b839cb25fc2d827834a30d4b213a4c126202a2",
+      :warning_code => 73,
+      :fingerprint => "f6981b9c24727ef45040450a1f4b158ae3bc31b4b0343efe853fe12c64881695",
       :warning_type => "Cross Site Scripting",
       :line => nil,
       :message => /^Rails\ 4\.0\.0\ has\ a\ vulnerability\ in\ numbe/,
@@ -71,6 +71,18 @@ class Rails4WithEnginesTests < Test::Unit::TestCase
       :message => /^Rails\ 4\.0\.0\ contains\ a\ SQL\ injection\ vul/,
       :confidence => 0,
       :relative_path => "Gemfile",
+      :user_input => nil
+  end
+
+  def test_remote_code_execution_CVE_2014_0130
+    assert_warning :type => :warning,
+      :warning_code => 77,
+      :fingerprint => "e833fd152ab95bf7481aada185323d97cd04c3e2322b90f3698632f4c4c04441",
+      :warning_type => "Remote Code Execution",
+      :line => nil,
+      :message => /^Rails\ 4\.0\.0\ with\ globbing\ routes\ is\ vuln/,
+      :confidence => 1,
+      :relative_path => "config/routes.rb",
       :user_input => nil
   end
 

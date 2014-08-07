@@ -69,4 +69,27 @@ class OtherController < ApplicationController
   def test_haml_stuff
     render :locals => { :user => User.first }
   end
+
+  def test_regex_dos
+    /#{params[:regex]}/
+  end
+
+  def test_escaped_regex
+    /#{Regexp.escape(params[:regex])}/
+  end
+
+  def test_unescaped_regex
+    /#{Rack::Utils.escape_html(params[:regex])}/
+  end
+
+  def test_intern
+    x = params[:x].intern
+
+    params.symbolize_keys!
+
+    #Checking that the code below does not warn about to_sym again
+    call_something_with x
+
+    x.cool_thing?
+  end
 end

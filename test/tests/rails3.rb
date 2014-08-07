@@ -16,7 +16,7 @@ class Rails3Tests < Test::Unit::TestCase
       :controller => 1,
       :model => 8,
       :template => 38,
-      :generic => 70
+      :generic => 72
     }
 
     if RUBY_PLATFORM == 'java'
@@ -1149,10 +1149,10 @@ class Rails3Tests < Test::Unit::TestCase
       :relative_path => "Gemfile"
   end
 
-  def test_number_to_currency_CVE_2013_6415
+  def test_number_to_currency_CVE_2014_0081
     assert_warning :type => :warning,
-      :warning_code => 65,
-      :fingerprint => "813b00b5c58567fb3f32051578b839cb25fc2d827834a30d4b213a4c126202a2",
+      :warning_code => 73,
+      :fingerprint => "f6981b9c24727ef45040450a1f4b158ae3bc31b4b0343efe853fe12c64881695",
       :warning_type => "Cross Site Scripting",
       :line => nil,
       :message => /^Rails\ 3\.0\.3\ has\ a\ vulnerability\ in\ numbe/,
@@ -1170,6 +1170,30 @@ class Rails3Tests < Test::Unit::TestCase
       :message => /^Rails\ 3\.0\.3\ contains\ a\ SQL\ injection\ vul/,
       :confidence => 0,
       :relative_path => "Gemfile",
+      :user_input => nil
+  end
+
+  def test_denial_of_service_CVE_2014_0082
+    assert_warning :type => :warning,
+      :warning_code => 75,
+      :fingerprint => "403a72d08a90043384fe56d3a6bc3e255b8799b380693914143d403607433db7",
+      :warning_type => "Denial of Service",
+      :line => nil,
+      :message => /^Rails\ 3\.0\.3\ has\ a\ denial\ of\ service\ vuln/,
+      :confidence => 0,
+      :relative_path => "Gemfile",
+      :user_input => nil
+  end
+
+  def test_remote_code_execution_CVE_2014_0130
+    assert_warning :type => :warning,
+      :warning_code => 77,
+      :fingerprint => "93393e44a0232d348e4db62276b18321b4cbc9051b702d43ba2fd3287175283c",
+      :warning_type => "Remote Code Execution",
+      :line => nil,
+      :message => /^Rails\ 3\.0\.3\ with\ globbing\ routes\ is\ vuln/,
+      :confidence => 0,
+      :relative_path => "config/routes.rb",
       :user_input => nil
   end
 

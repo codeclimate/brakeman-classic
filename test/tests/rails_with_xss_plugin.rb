@@ -10,8 +10,8 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
     @expected ||= {
       :controller => 1,
       :model => 3,
-      :template => 2,
-      :generic => 23 }
+      :template => 4,
+      :generic => 24 }
   end
 
   def report
@@ -231,6 +231,29 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
       :file => /application_controller\.rb/
   end
 
+  def test_cross_site_scripting
+    assert_warning :type => :template,
+      :warning_code => 58,
+      :fingerprint => "3ec8749301aa7cdb1d3ec5610120492138060f05d65af0aa53dbb1a3b7c493ac",
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Rails\ 2\.3\.14\ has\ a\ vulnerability\ in\ sani/,
+      :confidence => 0,
+      :relative_path => "app/views/users/test_sanitize.html.erb",
+      :user_input => nil
+  end
+
+  def test_cross_site_scripting_sanitize_dupe
+    assert_no_warning :type => :template,
+      :warning_code => 58,
+      :fingerprint => "9d90d446941026c42502e1213ef6d9122a2ad587266cdb002d9f30bb3c77523d",
+      :warning_type => "Cross Site Scripting",
+      :line => 1,
+      :message => /^Rails\ 2\.3\.14\ has\ a\ vulnerability\ in\ sani/,
+      :confidence => 0,
+      :relative_path => "app/views/users/test_sanitize.html.erb",
+      :user_input => nil
+  end
 
   def test_attribute_restriction_19 
     assert_warning :type => :model,
@@ -299,6 +322,18 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
     assert report[:generic_warnings].all? { |w| w.file.start_with? "/" }
   end
 
+  def test_cross_site_scripting_CVE_2012_1099
+    assert_warning :type => :template,
+      :warning_code => 22,
+      :fingerprint => "d54bacec90be92ad8ca58164cdfd505114eae34db2fb5b03f7bc2a8fd93f1edb",
+      :warning_type => "Cross Site Scripting",
+      :line => 18,
+      :message => /^Upgrade\ to\ Rails\ 3\ or\ use\ options_for_se/,
+      :confidence => 1,
+      :relative_path => "app/views/users/index.html.erb",
+      :user_input => nil
+  end
+
   def test_sql_injection_CVE_2013_0155
     assert_warning :type => :warning,
       :warning_type => "SQL Injection",
@@ -358,15 +393,27 @@ class RailsWithXssPluginTests < Test::Unit::TestCase
       :user_input => nil
   end
 
-  def test_number_to_currency_CVE_2013_6415
+  def test_number_to_currency_CVE_2014_0081
     assert_warning :type => :warning,
-      :warning_code => 65,
-      :fingerprint => "813b00b5c58567fb3f32051578b839cb25fc2d827834a30d4b213a4c126202a2",
+      :warning_code => 73,
+      :fingerprint => "f6981b9c24727ef45040450a1f4b158ae3bc31b4b0343efe853fe12c64881695",
       :warning_type => "Cross Site Scripting",
       :line => nil,
       :message => /^Rails\ 2\.3\.14\ has\ a\ vulnerability\ in\ numb/,
       :confidence => 1,
       :relative_path => "Gemfile",
+      :user_input => nil
+  end
+
+  def test_remote_code_execution_CVE_2014_0130
+    assert_warning :type => :warning,
+      :warning_code => 77,
+      :fingerprint => "93393e44a0232d348e4db62276b18321b4cbc9051b702d43ba2fd3287175283c",
+      :warning_type => "Remote Code Execution",
+      :line => nil,
+      :message => /^Rails\ 2\.3\.14\ with\ globbing\ routes\ is\ vul/,
+      :confidence => 0,
+      :relative_path => "config/routes.rb",
       :user_input => nil
   end
 end
