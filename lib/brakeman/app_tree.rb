@@ -1,6 +1,5 @@
 module Brakeman
   class AppTree
-
     VIEW_EXTENSIONS = %w[html.erb html.haml rhtml js.erb html.slim].join(",")
 
     attr_reader :root
@@ -74,7 +73,7 @@ module Brakeman
     end
 
     def template_paths
-      @template_paths ||= find_paths("app/views", "*.{#{VIEW_EXTENSIONS.join(",")}}")
+      @template_paths ||= find_paths("app/views", "*.{#{VIEW_EXTENSIONS}}")
     end
 
     def layout_exists?(name)

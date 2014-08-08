@@ -23,10 +23,10 @@ Gem::Specification.new do |s|
   s.add_dependency "haml", ">=3.0", "<5.0"
   s.add_dependency "sass", "~>3.0"
   s.add_dependency "slim", ">=1.3.6", "<3.0"
-  s.add_dependency "coffee-script"
+#  s.add_dependency "coffee-script"
   s.add_dependency "multi_json", "~>1.2"
   s.add_dependency "bertrpc"
   s.add_dependency "statsd-ruby"
-  s.add_dependency "activesupport"
+#  s.add_dependency "activesupport"
   s.add_dependency "rack"
 end

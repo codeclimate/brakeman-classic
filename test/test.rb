@@ -19,7 +19,7 @@ require 'brakeman'
 require 'brakeman/scanner'
 require 'test/unit'
 
-require "active_support/core_ext" # not currently used, but causes issues, so leaning into it
+#require "active_support/core_ext" # not currently used, but causes issues, so leaning into it
 
 require "brakeman/grit_app_tree" # not explicitly tested, but requiring to ensure at least loaded
 
