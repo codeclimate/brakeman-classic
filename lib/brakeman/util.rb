@@ -380,8 +380,9 @@ module Brakeman::Util
   end
 
   def relative_path file
-    if file and not file.empty? and file.start_with? '/'
-      Pathname.new(file).relative_path_from(Pathname.new(@tracker.app_path)).to_s
+    if file and not file.empty?
+      Pathname.new(file).expand_path.
+        relative_path_from(Pathname.new(@tracker.app_path).expand_path).to_s
     else
       file
     end

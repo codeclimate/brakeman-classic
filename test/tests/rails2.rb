@@ -800,6 +800,7 @@ class Rails2Tests < Test::Unit::TestCase
   def test_xss_content_tag_body
     assert_warning :type => :template,
       :warning_type => "Cross Site Scripting",
+      :fingerprint => "667861713b25664dcde4472aa0c291213cd894df2e3a55a5bf4d8a976111a14c",
       :line => 5,
       :message => /^Unescaped\ model\ attribute\ in\ content_tag/,
       :confidence => 0,
