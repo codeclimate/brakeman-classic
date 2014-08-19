@@ -13,6 +13,7 @@ class BrakemanTests < Test::Unit::TestCase
     absolute_path = relative_path.realpath.to_s
     input = ["-p", relative_path.to_s]
     options, _ = Brakeman::Options.parse input
+    options[:protocol] = "file"
     at = Brakeman::AppTree.from_options options
 
     assert !options[:app_path].start_with?("/")

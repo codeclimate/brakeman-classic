@@ -5,7 +5,7 @@ module Brakeman
     attr_reader :root
 
     def self.from_options(options)
-      root = File.expand_path options[:app_path]
+      root = options[:app_path]
 
       # Convert files into Regexp for matching
       init_options = {}
@@ -21,12 +21,13 @@ module Brakeman
         new(root, init_options)
       else
         require "brakeman/grit_app_tree"
+
         GritAppTree.new(root, init_options[:skip_files])
       end
     end
 
     def initialize(root, init_options = {})
-      @root = root
+      @root = File.expand_path root
       @skip_files = init_options[:skip_files]
       @only_files = init_options[:only_files]
     end
