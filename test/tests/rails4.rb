@@ -16,7 +16,7 @@ class Rails4Tests < Test::Unit::TestCase
       :controller => 0,
       :model => 1,
       :template => 2,
-      :generic => 32
+      :generic => 36
     }
   end
 
@@ -387,6 +387,28 @@ class Rails4Tests < Test::Unit::TestCase
       :user_input => s(:call, s(:call, s(:const, :User), :where, s(:hash, s(:lit, :stuff), s(:lit, 1))), :take)
   end
 
+  def test_symbol_dos_with_safe_parameters
+    assert_no_warning :type => :warning,
+      :warning_code => 59,
+      :fingerprint => "53a74ac0c23e934a1d439e0b53ce818a22db6b23a696a61cd7dfb5b19175240a",
+      :warning_type => "Denial of Service",
+      :line => 52,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string\ \(pa/,
+      :confidence => 0,
+      :relative_path => "app/controllers/users_controller.rb",
+      :user_input => s(:call, s(:params), :[], s(:lit, :controller))
+
+    assert_no_warning :type => :warning,
+      :warning_code => 59,
+      :fingerprint => "d569b240f71e4fc4cc6e91559923baea941a1341d1d70fd6c1c36813947e369d",
+      :warning_type => "Denial of Service",
+      :line => 53,
+      :message => /^Symbol\ conversion\ from\ unsafe\ string\ \(pa/,
+      :confidence => 0,
+      :relative_path => "app/controllers/users_controller.rb",
+      :user_input => s(:call, s(:params), :[], s(:lit, :action))
+  end
+
   def test_i18n_xss_CVE_2013_4491_workaround
     assert_no_warning :type => :warning,
       :warning_code => 63,
@@ -511,6 +533,49 @@ class Rails4Tests < Test::Unit::TestCase
       :confidence => 0,
       :relative_path => "Gemfile",
       :user_input => nil
+  end
+
+  def test_mass_assignment_CVE_2014_3415
+    assert_warning :type => :warning,
+      :warning_code => 81,
+      :fingerprint => "c4a619b7316e45a5927b098294ff39d7206f84bac084402630318bf6f89f396d",
+      :warning_type => "Mass Assignment",
+      :line => 57,
+      :message => /^create_with\ is\ vulnerable\ to\ strong\ para/,
+      :confidence => 0,
+      :relative_path => "app/controllers/users_controller.rb",
+      :user_input => nil
+
+    assert_warning :type => :warning,
+      :warning_code => 81,
+      :fingerprint => "c4a619b7316e45a5927b098294ff39d7206f84bac084402630318bf6f89f396d",
+      :warning_type => "Mass Assignment",
+      :line => 58,
+      :message => /^create_with\ is\ vulnerable\ to\ strong\ para/,
+      :confidence => 0,
+      :relative_path => "app/controllers/users_controller.rb",
+      :user_input => nil
+
+    assert_warning :type => :warning,
+      :warning_code => 81,
+      :fingerprint => "8c55b05e3467934ac900567d47b4ac496e9761424b66b246585d14ba5b2b0240",
+      :warning_type => "Mass Assignment",
+      :line => 61,
+      :message => /^create_with\ is\ vulnerable\ to\ strong\ para/,
+      :confidence => 1,
+      :relative_path => "app/controllers/users_controller.rb",
+      :user_input => nil
+
+    assert_warning :type => :warning,
+      :warning_code => 81,
+      :fingerprint => "aafdaf40064466b1eea16ca053072fb2ef20c999411108d606c8555ade2ce629",
+      :warning_type => "Mass Assignment",
+      :line => 62,
+      :message => /^create_with\ is\ vulnerable\ to\ strong\ para/,
+      :confidence => 2,
+      :relative_path => "app/controllers/users_controller.rb",
+      :user_input => nil
+
   end
 
   def test_mass_assignment_with_permit!
