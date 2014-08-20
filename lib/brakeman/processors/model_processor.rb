@@ -34,11 +34,15 @@ class Brakeman::ModelProcessor < Brakeman::BaseProcessor
 
     if @current_class
       outer_class = @current_class
-      name = (outer_class[:name].to_s + "::" + name.to_s).to_sym
+      # This line causes fingerprints to roll
+      # name = (outer_class[:name].to_s + "::" + name.to_s).to_sym
+      name = name.to_sym
     end
 
     if @current_module
-      name = (@current_module[:name].to_s + "::" + name.to_s).to_sym
+      # This line causes fingerprints to roll
+      # name = (@current_module[:name].to_s + "::" + name.to_s).to_sym
+      name = name.to_sym
     end
 
     if @tracker.models[name]

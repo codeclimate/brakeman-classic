@@ -402,7 +402,7 @@ class Rails32Tests < Test::Unit::TestCase
   def test_command_injection_from_namespaced_model_1
     assert_warning :type => :warning,
       :warning_type => "Command Injection",
-      :class => :"MultiModel::Model1",
+      :class => :"Model1", # Changed to class name only to prevent fingerprint changes :"MultiModel::Model1",
       :line => 5,
       :message => /^Possible command injection/,
       :confidence => 0,
@@ -414,7 +414,7 @@ class Rails32Tests < Test::Unit::TestCase
   def test_command_injection_from_namespaced_model_2
     assert_warning :type => :warning,
       :warning_type => "Command Injection",
-      :class => :"MultiModel::Model2",
+      :class => :"Model2", # Changed to class name only to prevent fingerprint changes :"MultiModel::Model2",
       :line => 13,
       :message => /^Possible command injection/,
       :confidence => 0,
