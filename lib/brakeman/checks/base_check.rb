@@ -142,6 +142,8 @@ class Brakeman::BaseCheck < Brakeman::SexpProcessor
   def ancestor? model, parent
     if model == nil
       false
+    elsif model == parent
+      raise ArgumentError, "Model #{model} cannot descend from itself"
     elsif model[:parent] == parent
       true
     elsif model[:parent]
