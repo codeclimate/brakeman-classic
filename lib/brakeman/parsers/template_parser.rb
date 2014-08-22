@@ -34,6 +34,8 @@ module Brakeman
         if src and ast = @file_parser.parse_ruby(src, path)
           @file_parser.file_list[:templates] << TemplateFile.new(path, ast, name, type)
         end
+      rescue Slim::Parser::SyntaxError => e
+        tracker.error e, path
       rescue Racc::ParseError => e
         tracker.error e, "could not parse #{path}"
       rescue Haml::Error => e
