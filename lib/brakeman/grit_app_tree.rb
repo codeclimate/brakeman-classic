@@ -4,6 +4,7 @@ require "pathname"
 require "grit"
 require "uri"
 require "rack"
+require "brakeman/git_cache"
 
 module Brakeman
   class GritAppTree < AppTree
@@ -110,9 +111,17 @@ module Brakeman
     def contents
       commit = grit_repo.commit(@commit_sha)
       tree_id = commit.tree.id
-      output = grit_repo.git.native(:ls_tree, { r: true }, tree_id)
-      grit_tree = ::Grit::Tree.allocate.construct_initialize(grit_repo, tree_id, output)
+
+      grit_tree = Brakeman::GitCache.get(cache_key(tree_id)) do
+        output = grit_repo.git.native(:ls_tree, { r: true }, tree_id)
+        ::Grit::Tree.allocate.construct_initialize(grit_repo, tree_id, output)
+      end
+
       grit_tree.contents
+    end
+
+    def cache_key(tree_id)
+      ["tree", @repo_id, tree_id].join("-")
     end
   end
 end

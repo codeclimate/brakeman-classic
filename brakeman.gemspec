@@ -30,4 +30,5 @@ Gem::Specification.new do |s|
 #  s.add_dependency "activesupport"
   s.add_dependency "rack"
   s.add_dependency "json"
+  s.add_dependency "dalli"
 end
