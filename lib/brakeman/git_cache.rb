@@ -1,5 +1,7 @@
 module Brakeman
   class GitCache
+    require "dalli"
+
     def self.client
       @client ||= Dalli::Client.new(nil, {namespace: "worker", compress: true})
     end
