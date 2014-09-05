@@ -64,3 +64,14 @@ class SmokeInstrumentation
     $statsd.increment "worker.brakeman.smoke.#{remote_method_name}.calls"
   end
 end
+
+module Quality
+  module Smoke
+    # Same structure we have in worker.
+    # Helps deserialize the data we store in memcached from worker.
+    # We don't care that much about the implementation since it's not used.
+    class Client < Struct.new(:repo_id, :timeout, :grit_url)
+
+    end
+  end
+end

@@ -7,7 +7,7 @@ module Brakeman
     end
 
     def self.get(key, &block)
-      client.fetch(key, &block)
+      client.get(key) || block.call
     end
   end
 end
