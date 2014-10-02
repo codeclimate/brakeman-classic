@@ -1,3 +1,7 @@
+require 'slim'
+require 'haml'
+require 'sass'
+
 module Brakeman
   class TemplateParser
     include Brakeman::Util
